@@ -39,5 +39,14 @@ hóe iets moet, kijk hoe ACCRD het doet. Wijk je af, schrijf op die plek waaróm
   AI-model; AI mag hooguit de formulering van de uitleg helpen, nooit kiezen wat eruit moet.
 - **LIFE stelt voor, de gebruiker beslist.** Geen automatische wijzigingen aan afspraken van
   mensen.
-- **Het ontwerp** (`ontwerp/`) gebruikt landschappen met parallax als sfeer voor de
-  verkooppagina. Voor het dashboard zelf geldt: rustig en bruikbaar eerst.
+- **Het ontwerp is de landschapstocht, ook voor het dashboard.** Parallax-landschappen in lagen,
+  een klok die meeloopt van ochtend tot nacht, en elk dagdeel als hoofdstuk met een werkend
+  paneel erin (`frontend/landschap.css` en `landschap.js`, Vandaag en Week). Eerder stond hier
+  "rustig en bruikbaar eerst", en dat leidde tot een vlakke app-look die niemand wilde. Bouw
+  nieuwe schermen dus in dezelfde tocht en maak geen apart, vlak dashboard. Overweeg je toch
+  een afwijking, vraag het eerst. Beslist en afgevallen: Liquid Glass voor de lagen (te zwaar
+  voor het scrollen en niet gewenst).
+- **Interface in de panelen blijft monochroom;** kleur zit in het landschap en betekent in de
+  panelen alleen status (groen haalbaar, oranje krap, rood te vol).
+- **Geen dubbele id's.** Een sectie en een element erin deelden eens een id, waardoor de code
+  het hele hoofdstuk overschreef. Geef containers een eigen naam (`liever-lijst`).

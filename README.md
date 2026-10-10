@@ -20,7 +20,7 @@ npm run dev   # prototype op http://localhost:5173 (Vandaag en Week)
 - `src/planner/`: de planlogica. Gewone ES-modules in JavaScript met JSDoc-types, zodat
   dezelfde code in de tests én in de browser draait zonder build-stap. (Afwijking van
   "TypeScript" in de rest van het platform; bij de backend gaan we dat heroverwegen.)
-- `frontend/`: `vandaag.html`/`.js` en `week.html`/`.js`, plus `styles.css`.
+- `frontend/`: `vandaag.html`/`.js` en `week.html`/`.js` in de landschapstocht, plus `landschap.css` en `landschap.js` (de parallax-motor).
 - `src/voorbeeld/`: verzonnen voorbeeldweek. Geen echte gegevens.
 - `ontwerp/verkooppagina-concept.html`: de verkooppagina als parallax-tocht door één dag.
 
