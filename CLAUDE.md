@@ -4,7 +4,7 @@ LIFE stemt werk, sport, gezin en vrije tijd op elkaar af en geeft elke ochtend e
 dagplan, inclusief wat je vandaag beter niet doet. Los van de andere LuzeX-projecten: eigen
 database, eigen Render-service, eigen geheimen.
 
-**Stand:** alleen ontwerp, nog geen code. Staat er hier code die dit bestand niet noemt, dan
+**Stand:** planlogica (`src/planner/`, getest) en een prototype met voorbeeldgegevens. Nog geen backend. Staat er hier code die dit bestand niet noemt, dan
 heeft de code gelijk en is dit bestand verouderd — werk het bij in dezelfde wijziging.
 
 ## Regels van het LuzeX-platform
@@ -14,7 +14,7 @@ hóe iets moet, kijk hoe ACCRD het doet. Wijk je af, schrijf op die plek waaróm
 
 - **Nederlands**, overal: routes, variabelen, tabelnamen, commitberichten, commentaar. Getallen
   via `nl-NL`.
-- **Geen build-stap, geen framework** in de frontend. Statische HTML/CSS/JS, geserveerd door
+- **Geen build-stap, geen framework** in de frontend. De planlogica is daarom gewone ES-modules met JSDoc in plaats van TypeScript, zodat de browser hem rechtstreeks laadt; ACCRD gebruikt TypeScript. Statische HTML/CSS/JS, geserveerd door
   de backend. Iconen zijn inline SVG (`viewBox="0 0 24 24"`, `fill="none"`,
   `stroke="currentColor"`, `stroke-width="1.6"`).
 - **Strikt monochrome interface.** Kleur betekent status. Donkere modus is niet optioneel.

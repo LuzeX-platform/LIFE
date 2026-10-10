@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week · LIFE</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<main>
+  <div class="dagkop"><h1>Deze week</h1><p id="ondertitel"></p></div>
+  <div class="raster">
+    <section class="kaart" aria-labelledby="k-balans"><h2 id="k-balans">Waar je week naartoe gaat <small>gepland tegenover wat je wilde</small></h2><ul class="balans" id="balans"></ul></section>
+    <section class="kaart" aria-labelledby="k-dagen"><h2 id="k-dagen">Haalbaarheid per dag</h2><ul class="weekdagen" id="weekdagen"></ul></section>
+  </div>
+  <p class="noot">Voorbeeldgegevens. Een streepje op de balk is het doel; oranje betekent minder dan 80% daarvan.</p>
+</main>
+<script type="module" src="/week.js"></script>
+</body>
+</html>

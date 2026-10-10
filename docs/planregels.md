@@ -34,9 +34,24 @@ LIFE schrapt in deze volgorde, en noemt altijd een reden en een lichter alternat
 **Nooit:** een vaste afspraak, een afspraak met een persoon, of sport twee keer op rij
 schrappen zonder dat LIFE dat zegt.
 
-## Open vragen
+## Gemaakte keuzes
 
-1. Hoe komt slaap binnen: zelf invullen, of via Apple Gezondheid? Voorstel: zelf invullen.
-2. Eigen agenda, of koppelen aan Google of Apple Agenda?
-3. Eén persoon, of delen partners en kinderen een agenda?
-4. Mag LIFE zelf verplaatsen? Voorstel: nee, alleen voorstellen.
+Voorlopig vastgelegd als uitgangspunt; omgooien kan, de tests laten zien wat er verschuift.
+
+1. **Slaap:** zelf invullen. Een koppeling met Apple Gezondheid kan later, met aparte toestemming.
+2. **Agenda:** eigen agenda. Koppelen aan Google of Apple Agenda komt later.
+3. **Gezin:** één persoon. Een gedeelde agenda met partner en kinderen is een eigen ontwerp.
+4. **Verplaatsen:** LIFE doet alleen voorstellen en wijzigt nooit zelf iets.
+
+## Hoe het in de code zit
+
+De regels staan in `src/planner/`, zonder afhankelijkheden, en zijn volledig getest
+(`npm test`). `REGELS` in `haalbaarheid.js` bevat alle drempels op één plek.
+
+- `haalbaarheid.js`: score en strafpunten, elk met een reden.
+- `lieverNiet.js`: wat eruit kan, in vaste volgorde; stopt zodra de dag haalbaar is.
+- `botsingen.js`: overlap, met een voorstel als er een veilige oplossing is.
+- `week.js`: gepland tegenover weekdoel, "achter" onder 80%.
+
+**Nog open:** de drempels zijn nog niet gekalibreerd met echte dagen. Pas dat aan zodra er
+gebruik is, niet eerder.

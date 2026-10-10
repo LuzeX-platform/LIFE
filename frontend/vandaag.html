@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vandaag · LIFE</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<main>
+  <div class="dagkop"><h1 id="titel">Vandaag</h1><p id="ondertitel"></p></div>
+  <div class="dagen" id="dagen" role="group" aria-label="Kies een dag"></div>
+  <div class="raster">
+    <div class="stapel">
+      <section class="kaart" aria-labelledby="k-plan"><h2 id="k-plan">Dagplan <small id="plan-info"></small></h2><div id="plan"></div></section>
+    </div>
+    <div class="stapel">
+      <section class="kaart" aria-labelledby="k-score"><h2 id="k-score">Haalbaarheid</h2><div id="score"></div></section>
+      <section class="kaart" id="k-liever" aria-labelledby="k-liever-kop"><h2 id="k-liever-kop">Liever niet vandaag</h2><div id="liever"></div></section>
+      <section class="kaart" id="k-botsing" aria-labelledby="k-botsing-kop" hidden><h2 id="k-botsing-kop">Twee afspraken botsen</h2><div id="botsing"></div></section>
+    </div>
+  </div>
+  <p class="noot">Voorbeeldgegevens, niets wordt opgeslagen. Alle suggesties komen uit vaste regels (docs/planregels.md), niet uit een AI-model.</p>
+</main>
+<script type="module" src="/vandaag.js"></script>
+</body>
+</html>
