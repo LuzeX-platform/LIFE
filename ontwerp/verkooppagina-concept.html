@@ -1,0 +1,1303 @@
+<title>LIFE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+/* Layout: per hoofdstuk één podium van schermhoogte dat blijft staan (sticky) terwijl de tekst
+   eroverheen schuift. De lagen in het podium bewegen trager naarmate ze verder weg liggen; de
+   tekst beweegt gewoon met de pagina mee. Dat snelheidsverschil is de diepte.
+   Kleur zit uitsluitend in het beeld. De interface zelf is monochroom, zoals overal bij LuzeX;
+   het enige statuskleurtje is het grijze "Concept"-label (grijs = concept). */
+:root {
+  --bg: #eceeed;
+  --surface: #f9faf9;
+  --fg: #141816;          /* 15,38:1 op --bg, 17,12:1 op --surface */
+  --fg-zacht: #4c5451;    /*  6,69:1 op --bg,  7,45:1 op --surface */
+  --status-concept: #5d6462; /* 5,20:1 op --bg, 5,79:1 op --surface */
+  --lijn: rgba(20, 24, 22, 0.14);
+  --schaduw: rgba(0, 0, 0, 0.35);
+
+  /* Tekst die direct op het beeld staat. Het beeld is in beide modi hetzelfde, dus deze
+     tokens wisselen bewust niet mee; de scrim eronder zorgt voor het contrast. */
+  --op-beeld: #ffffff;
+  --titel: #f6eee8;
+  --scrim: rgba(6, 8, 12, 0.5);
+  --nacht: #0b0e12;
+
+  --font-kop: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-tekst: "Source Serif 4", "Source Serif Pro", Georgia, "Times New Roman", serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --rand: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c0f0e;
+    --surface: #161a19;
+    --fg: #edf1ef;          /* 16,90:1 op --bg, 15,41:1 op --surface */
+    --fg-zacht: #a3ada9;    /*  8,35:1 op --bg,  7,62:1 op --surface */
+    --status-concept: #9ba3a0; /* 7,47:1 op --bg, 6,81:1 op --surface */
+    --lijn: rgba(237, 241, 239, 0.14);
+    --schaduw: rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c0f0e;
+  --surface: #161a19;
+  --fg: #edf1ef;
+  --fg-zacht: #a3ada9;
+  --status-concept: #9ba3a0;
+  --lijn: rgba(237, 241, 239, 0.14);
+  --schaduw: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 16px/1.5 var(--font-tekst);
+  -webkit-font-smoothing: antialiased;
+}
+main { overflow-x: clip; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+
+/* ── Balk bovenin ───────────────────────────────────────────── */
+.balk {
+  position: fixed; inset: 0 0 auto 0; z-index: 30;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) max(16px, 2.5vw) 0;
+  pointer-events: none;
+}
+.balk > * { pointer-events: auto; }
+.pil {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 42px; padding: 5px 5px 5px 16px;
+  color: var(--fg);
+  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--lijn);
+  border-radius: 999px;
+}
+.merk { padding-right: 6px; }
+.woordmerk { font: 800 1.02rem/1 var(--font-kop); font-stretch: 125%; letter-spacing: -0.01em; }
+.chip {
+  font: 500 0.66rem/1 var(--font-data); text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--status-concept); border: 1px solid currentColor; border-radius: 999px; padding: 5px 8px;
+}
+.klok { font: 500 0.95rem/1 var(--font-data); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.plek { font: 500 0.82rem/1 var(--font-kop); color: var(--fg-zacht); white-space: nowrap; }
+.knop {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 32px; padding: 0 13px 0 11px;
+  font: 600 0.82rem/1 var(--font-kop); font-stretch: 105%;
+  color: var(--surface); background: var(--fg);
+  border: 0; border-radius: 999px; cursor: pointer;
+}
+.knop svg { width: 18px; height: 18px; flex: none; }
+@media (hover: hover) { .knop:hover { opacity: 0.86; } }
+.melding {
+  position: fixed; z-index: 30; left: 50%; transform: translateX(-50%);
+  top: calc(env(safe-area-inset-top, 0px) + 66px);
+  max-width: calc(100% - 32px); margin: 0; padding: 10px 16px;
+  font: 500 0.85rem/1.35 var(--font-kop);
+  color: var(--surface); background: var(--fg); border-radius: var(--rand);
+  box-shadow: 0 16px 40px -20px var(--schaduw);
+}
+
+/* ── Hoofdstukken ───────────────────────────────────────────── */
+.hoofdstuk { position: relative; }
+.podium {
+  position: sticky; top: 0; margin: 0;
+  height: 100vh; height: 100svh;
+  overflow: hidden; isolation: isolate;
+  background: var(--nacht);
+}
+.laag { position: absolute; inset: 0; }
+.laag svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.golf { position: absolute; inset: 0; }
+.golf-1 { animation: golf 12s ease-in-out infinite alternate; }
+.golf-2 { animation: golf 8s ease-in-out -3s infinite alternate-reverse; }
+@keyframes golf {
+  from { opacity: 0.5; transform: translateX(-1.2%); }
+  to { opacity: 1; transform: translateX(1.2%); }
+}
+
+.laag-foto {
+  display: none; inset: -25% 0;
+  background: var(--nacht) center / cover no-repeat;
+}
+.heeft-foto .laag-foto { display: block; }
+.heeft-foto .laag:not(.laag-foto):not(.laag-titel) { visibility: hidden; }
+.heeft-foto .laag-titel { z-index: 2; }
+
+.bijschrift {
+  position: absolute; z-index: 5;
+  right: max(16px, 2.5vw); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  display: flex; align-items: center; gap: 10px;
+  max-width: calc(100% - 32px);
+  padding: 7px 12px;
+  font: 500 0.7rem/1.3 var(--font-data); letter-spacing: 0.03em;
+  color: var(--fg);
+  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  border: 1px solid var(--lijn); border-radius: 999px;
+}
+.bijschrift:has(button:not([hidden])) { padding: 5px 5px 5px 12px; }
+.bijschrift button {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 10px 0 8px;
+  font: 600 0.72rem/1 var(--font-kop);
+  color: var(--fg); background: transparent;
+  border: 1px solid var(--lijn); border-radius: 999px; cursor: pointer;
+}
+.bijschrift button svg { width: 14px; height: 14px; }
+
+/* Neerzetten van een foto: het podium laat zien waar hij terechtkomt. */
+.podium::after {
+  content: "Laat los om de foto hier te plaatsen";
+  position: absolute; inset: 14px; z-index: 6;
+  display: grid; place-items: center; padding: 24px; text-align: center;
+  font: 700 clamp(1.1rem, 2.4vw, 1.6rem)/1.2 var(--font-kop);
+  color: var(--op-beeld); background: var(--scrim);
+  border: 2px dashed var(--op-beeld); border-radius: var(--rand);
+  opacity: 0; transition: opacity 0.15s; pointer-events: none;
+}
+.hoofdstuk.doel .podium::after { opacity: 1; }
+
+.verhaal {
+  position: relative; z-index: 2;
+  margin: -100vh auto 0; margin-top: -100svh;
+  max-width: 1240px;
+  padding-inline: max(16px, 4vw);
+  padding-block: 36svh 50svh; /* onderkant: zie "Overgang en diepte" */
+  display: grid; gap: 60svh;
+  pointer-events: none;
+}
+.verhaal > * { pointer-events: auto; }
+
+.kop { position: relative; isolation: isolate; max-width: 46rem; color: var(--op-beeld); }
+.kop::before {
+  content: ""; position: absolute; inset: -32% -20% -32% -24%; z-index: -1;
+  background: radial-gradient(closest-side, var(--scrim), transparent);
+  pointer-events: none;
+}
+.tijdregel {
+  display: flex; align-items: baseline; gap: 12px; margin: 0 0 16px;
+  font: 500 0.76rem/1.2 var(--font-data); letter-spacing: 0.16em; text-transform: uppercase;
+}
+.tijdregel b {
+  font-weight: 500; font-size: 1.2rem; letter-spacing: 0.02em; font-variant-numeric: tabular-nums;
+}
+.kop h2 {
+  margin: 0;
+  font: 800 clamp(2.5rem, 7vw, 6.4rem)/0.95 var(--font-kop); font-stretch: 125%;
+  letter-spacing: -0.015em; text-wrap: balance;
+  text-shadow: 0 2px 30px var(--schaduw);
+}
+.plekregel {
+  margin: 18px 0 0;
+  font: 500 0.8rem/1.4 var(--font-data); letter-spacing: 0.05em;
+}
+
+.paneel {
+  max-width: 34rem;
+  padding: clamp(20px, 2.6vw, 32px);
+  font-size: 1.125rem; line-height: 1.62;
+  color: var(--fg);
+  background: var(--surface);
+  /* Geen backdrop-filter: vervagen achter een paneel boven bewegende lagen moet elk frame
+     opnieuw en maakte het scrollen merkbaar zwaarder. Iets dekkender in plaats daarvan. */
+  background: color-mix(in srgb, var(--surface) 93%, transparent);
+  border: 1px solid var(--lijn); border-radius: var(--rand);
+  box-shadow: 0 30px 70px -36px var(--schaduw);
+}
+.paneel.rechts { justify-self: end; }
+.paneel p { margin: 0; text-wrap: pretty; }
+.paneel p + p { margin-top: 1em; }
+.feiten {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 20px;
+  margin: 22px 0 0; padding-top: 18px; border-top: 1px solid var(--lijn);
+}
+.feiten div { min-width: 0; }
+.feiten dt {
+  font: 500 0.66rem/1.3 var(--font-data); letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--fg-zacht);
+}
+.feiten dd {
+  margin: 6px 0 0;
+  font: 650 1.02rem/1.2 var(--font-kop); font-stretch: 108%; font-variant-numeric: tabular-nums;
+}
+
+/* ── Opening ────────────────────────────────────────────────── */
+.laag-titel {
+  margin: 0;
+  text-align: center; white-space: nowrap;
+  font: 900 clamp(5.5rem, 25vw, 30rem)/0.78 var(--font-kop); font-stretch: 125%;
+  letter-spacing: -0.035em; text-transform: uppercase;
+  color: var(--titel);
+  text-shadow: 0 0 90px rgba(255, 210, 175, 0.28);
+}
+.laag-titel { inset: auto 0 47% 0; }
+/* In een staand scherm valt de middelste berg midden onder de titel; iets hoger houden zodat
+   alleen de top over de letters valt en het woord leesbaar blijft. */
+@media (max-aspect-ratio: 1/1) { .laag-titel { inset: auto 0 59% 0; } }
+.held .verhaal { display: block; padding-block: 0; }
+.intro {
+  position: relative; isolation: isolate;
+  min-height: 100vh; min-height: 100svh;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+  max-width: 40rem;
+  color: var(--op-beeld);
+}
+.intro .kop { display: grid; gap: 14px; justify-items: start; }
+.intro .kop > * { margin: 0; }
+.lede {
+  font: 400 clamp(1.2rem, 2.2vw, 1.55rem)/1.45 var(--font-tekst);
+  text-wrap: pretty; text-shadow: 0 1px 18px var(--schaduw);
+}
+.scroll-hint {
+  display: inline-flex; align-items: center; gap: 10px; margin-top: 6px;
+  font: 500 0.76rem/1 var(--font-data); letter-spacing: 0.14em; text-transform: uppercase;
+}
+.scroll-hint svg { width: 20px; height: 20px; animation: knik 2.4s ease-in-out infinite; }
+@keyframes knik { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+
+/* ── Colofon ────────────────────────────────────────────────── */
+.colofon { position: relative; z-index: 3; background: var(--bg); color: var(--fg); }
+.colofon-binnen {
+  max-width: 1120px; margin: 0 auto;
+  padding-inline: max(16px, 4vw); padding-block: clamp(64px, 10vw, 128px) 48px;
+  display: grid; gap: 56px;
+}
+.colofon h2 {
+  margin: 0 0 20px;
+  font: 800 clamp(2rem, 4.6vw, 3.6rem)/1 var(--font-kop); font-stretch: 120%;
+  letter-spacing: -0.01em; text-wrap: balance;
+}
+.inleiding { margin: 0; max-width: 60ch; font-size: 1.2rem; line-height: 1.6; text-wrap: pretty; }
+.snelheid-kader { display: grid; gap: 16px; max-width: 760px; }
+.snelheid-kader h3, .uitleg h3 {
+  margin: 0; font: 700 1.05rem/1.25 var(--font-kop); font-stretch: 112%;
+}
+.snelheid-kader p { margin: 0; color: var(--fg-zacht); font-size: 0.95rem; }
+.snelheden { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.snelheden li {
+  display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 4rem;
+  align-items: center; gap: 16px;
+  font: 500 0.82rem/1.3 var(--font-data);
+}
+.snelheden li.tekst { padding-top: 10px; border-top: 1px solid var(--lijn); }
+.meter { height: 6px; background: var(--lijn); border-radius: 3px; overflow: hidden; }
+.meter span { display: block; height: 100%; width: max(2px, calc(var(--s) * 100%)); background: var(--fg); }
+.waarde { text-align: right; font-variant-numeric: tabular-nums; }
+.uitleg {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 32px 40px;
+}
+.uitleg div { min-width: 0; }
+.uitleg p { margin: 8px 0 0; color: var(--fg-zacht); line-height: 1.6; text-wrap: pretty; }
+.voet {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px;
+  padding-top: 20px; border-top: 1px solid var(--lijn);
+  font: 500 0.74rem/1.4 var(--font-data); letter-spacing: 0.04em; color: var(--fg-zacht);
+}
+
+@media (max-width: 640px) {
+  .plek, .knop-tekst { display: none; }
+  .knop { padding: 0; width: 32px; justify-content: center; }
+  .paneel { font-size: 1.05rem; }
+  .feiten { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .snelheden li { grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr) 3.4rem; gap: 10px; }
+  .bijschrift { left: 16px; right: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .golf-1, .golf-2, .scroll-hint svg { animation: none; }
+}
+
+/* ── Overgang en diepte ─────────────────────────────────────────
+   Het volgende hoofdstuk schuift als een vel over het vorige: het vorige podium blijft sticky
+   staan terwijl het nieuwe er met een negatieve marge overheen komt. Dat is gewoon scrollen,
+   dus het loopt net zo soepel als de pagina zelf. De tekst van een hoofdstuk eindigt daarom
+   ruim een schermhoogte voor het einde, anders schuift het volgende vel eroverheen. */
+.hoofdstuk { isolation: isolate; }
+.hoofdstuk + .hoofdstuk, .hoofdstuk + .colofon { margin-top: -100vh; margin-top: -100svh; }
+.hoofdstuk + .hoofdstuk .podium, .hoofdstuk + .colofon { box-shadow: 0 -28px 60px -12px rgba(0, 0, 0, 0.45); }
+.held .verhaal { min-height: 260vh; min-height: 260svh; }
+.hoofdstuk:not(.held) .verhaal { padding-bottom: 130vh; padding-bottom: 130svh; }
+/* ── App-voorbeelden in de panelen ──────────────────────────────
+   Dezelfde regel als in de rest van de pagina: kleur zit in het beeld, de interface is
+   monochroom. Het label "Voorbeeld" staat op elke kaart omdat de gegevens verzonnen zijn. */
+.app { max-width: 36rem; }
+.app-kop { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.app-kop b { font: 700 1.05rem/1.25 var(--font-kop); font-stretch: 108%; }
+.voorbeeld { flex: none; font: 500 0.64rem/1 var(--font-data); letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-zacht); border: 1px solid var(--lijn); border-radius: 999px; padding: 4px 8px; }
+.app .feiten { margin-top: 16px; }
+.app-noot { margin: 14px 0 0 !important; font-size: 0.95rem !important; color: var(--fg-zacht); }
+.plan, .botsing { list-style: none; margin: 0; padding: 0; display: grid; }
+.plan li, .botsing li { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) auto; align-items: baseline; gap: 12px; padding: 9px 0; border-top: 1px solid var(--lijn); font-size: 0.98rem; line-height: 1.35; }
+.plan li:first-child, .botsing li:first-child { border-top: 0; }
+.plan time, .botsing time { font: 500 0.82rem/1.4 var(--font-data); font-variant-numeric: tabular-nums; color: var(--fg-zacht); }
+.plan em, .botsing em { font: 500 0.66rem/1 var(--font-data); letter-spacing: 0.1em; text-transform: uppercase; font-style: normal; color: var(--fg-zacht); }
+.balans { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.balans li { display: grid; grid-template-columns: 5.2rem minmax(0, 1fr) 5.2rem; align-items: center; gap: 12px; font-size: 0.95rem; }
+.balans i { display: block; height: 8px; border-radius: 4px; background: var(--lijn); overflow: hidden; }
+.balans b { display: block; height: 100%; width: calc(var(--p) * 100%); background: var(--fg); border-radius: 4px; }
+.balans em { font: 500 0.8rem/1 var(--font-data); font-style: normal; font-variant-numeric: tabular-nums; text-align: right; color: var(--fg-zacht); white-space: nowrap; }
+.liever { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.liever li { display: grid; gap: 3px; padding-left: 14px; border-left: 2px solid var(--fg); }
+.liever b { font-size: 1.02rem; line-height: 1.3; text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.liever span { font-size: 0.95rem; line-height: 1.45; color: var(--fg-zacht); }
+.liever em { font-style: normal; font-weight: 600; font-size: 0.95rem; line-height: 1.4; }
+.voorstel { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--lijn); }
+.voorstel b { font: 600 0.7rem/1 var(--font-data); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-zacht); }
+.voorstel p { margin: 8px 0 0 !important; font-size: 1rem; }
+.knoppen { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.knopje { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; font: 700 0.9rem/1 var(--font-kop); color: var(--fg); background: transparent; border: 1px solid var(--lijn); border-radius: 999px; cursor: default; }
+.knopje--vol { color: var(--surface); background: var(--fg); border-color: var(--fg); }
+button.knopje { cursor: pointer; }
+.wacht { display: grid; gap: 8px; max-width: 32rem; }
+.wacht label { font: 600 0.8rem/1.2 var(--font-kop); }
+.wacht-rij { display: flex; flex-wrap: wrap; gap: 8px; }
+.wacht-rij input { flex: 1 1 14rem; min-width: 0; min-height: 44px; padding: 0 16px; font: inherit; font-size: 1rem; color: var(--fg); background: var(--surface); border: 1px solid var(--lijn); border-radius: 999px; }
+.wacht-rij .knopje { min-height: 44px; }
+.wacht-melding { margin: 0; min-height: 1.4em; font-size: 0.92rem; color: var(--fg-zacht); }
+@media (max-width: 640px) {
+  .plan li, .botsing li { grid-template-columns: 3rem minmax(0, 1fr); }
+  .plan em, .botsing em { grid-column: 2; }
+  .balans li { grid-template-columns: 4.6rem minmax(0, 1fr) 4.4rem; gap: 8px; }
+}
+</style>
+
+<header class="balk">
+  <div class="pil merk">
+    <span class="woordmerk">LIFE</span>
+    <span class="chip">Concept</span>
+  </div>
+  <div class="pil dag">
+    <span class="klok" id="klok" aria-label="Tijd van de dag in dit verhaal">05:40</span>
+    <span class="plek" id="plek">Blauw uur</span>
+    <button class="knop" id="foto-knop" type="button" aria-label="Eigen foto plaatsen in het hoofdstuk dat je nu ziet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.5"/></svg>
+      <span class="knop-tekst">Eigen foto</span>
+    </button>
+    <input type="file" id="foto-invoer" accept="image/*" hidden>
+  </div>
+</header>
+<p class="melding" id="melding" role="status" hidden></p>
+
+<main>
+  <section class="hoofdstuk held" data-scene="held" data-tijd="05:40" data-plek="Blauw uur" aria-label="Opening">
+    <figure class="podium">
+      <h1 class="laag laag-titel" data-snelheid="0.12" data-voor="2">LIFE<span class="sr-only">: één app voor je hele dag</span></h1>
+    </figure>
+    <div class="verhaal">
+      <div class="intro">
+        <div class="kop">
+          <p class="tijdregel"><b>05:40</b> Eén app voor je hele dag</p>
+          <p class="lede">LIFE stemt je werk, sport, gezin en vrije tijd op elkaar af. Elke ochtend een dagplan dat je echt kunt halen, en een lijst met wat je vandaag beter níét doet.</p>
+          <p class="scroll-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg>
+            Scroll door een dag
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hoofdstuk" id="ochtend" data-scene="wad" data-tijd="06:45" data-plek="Ochtend" aria-labelledby="kop-ochtend">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop">
+        <p class="tijdregel"><b>06:45</b> ochtend</p>
+        <h2 id="kop-ochtend">Elke ochtend een dagplan dat past.</h2>
+        <p class="plekregel">Het eerste wat je opent</p>
+      </header>
+      <div class="paneel">
+        <p>Je werk, de training, het wegbrengen van de kinderen en het etentje met vrienden staan in één overzicht. LIFE legt ze naast je slaap, je reistijd en je energie, en maakt er een plan van dat je echt kunt halen.</p>
+      </div>
+      <div class="paneel rechts app" aria-label="Voorbeeld van een dagplan">
+        <div class="app-kop"><b>Dagplan · dinsdag</b><span class="voorbeeld">Voorbeeld</span></div>
+        <ol class="plan">
+          <li><time>07:30</time><span>Kinderen naar school</span><em>Gezin</em></li>
+          <li><time>09:00</time><span>Focuswerk: offerte, 2 uur</span><em>Werk</em></li>
+          <li><time>12:30</time><span>Lunch en wandeling</span><em>Sport</em></li>
+          <li><time>14:00</time><span>Teamoverleg</span><em>Werk</em></li>
+          <li><time>16:30</time><span>Rustig trainen, 45 minuten</span><em>Sport</em></li>
+          <li><time>17:45</time><span>Koken en samen eten</span><em>Gezin</em></li>
+          <li><time>20:00</time><span>Vrij. Geen taken.</span><em>Vrije tijd</em></li>
+        </ol>
+        <dl class="feiten">
+          <div><dt>Haalbaarheid</dt><dd>82 van 100</dd></div>
+          <div><dt>Slaap vannacht</dt><dd>7 u 10 min</dd></div>
+          <div><dt>Gepland</dt><dd>9 u 15 min</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="hoofdstuk" id="week" data-scene="veluwe" data-tijd="10:30" data-plek="Week" aria-labelledby="kop-week">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop">
+        <p class="tijdregel"><b>10:30</b> overzicht</p>
+        <h2 id="kop-week">Alles op één kaart.</h2>
+        <p class="plekregel">Werk, sport, gezin, vrienden, school en vrije tijd</p>
+      </header>
+      <div class="paneel">
+        <p>Al die dingen vragen om dezelfde uren. LIFE laat zien waar je week naartoe gaat en waar het wringt, zodat je kiest voordat de week voor je kiest.</p>
+      </div>
+      <div class="paneel rechts app" aria-label="Voorbeeld van een weekoverzicht">
+        <div class="app-kop"><b>Je week · uren gepland tegenover wat je wilde</b><span class="voorbeeld">Voorbeeld</span></div>
+        <ul class="balans">
+          <li style="--p:0.95"><span>Werk</span><i><b></b></i><em>38 / 40 u</em></li>
+          <li style="--p:0.88"><span>Gezin</span><i><b></b></i><em>22 / 25 u</em></li>
+          <li style="--p:0.5"><span>Sport</span><i><b></b></i><em>3 / 6 u</em></li>
+          <li style="--p:0.5"><span>Vrienden</span><i><b></b></i><em>2 / 4 u</em></li>
+          <li style="--p:1"><span>School</span><i><b></b></i><em>4 / 4 u</em></li>
+          <li style="--p:0.33"><span>Vrije tijd</span><i><b></b></i><em>2 / 6 u</em></li>
+        </ul>
+        <p class="app-noot">Sport, vrienden en vrije tijd lopen achter. LIFE stelt voor waar je ze kunt inplannen.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="hoofdstuk" id="niet" data-scene="fjord" data-tijd="14:20" data-plek="Middag" aria-labelledby="kop-niet">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop">
+        <p class="tijdregel"><b>14:20</b> middag</p>
+        <h2 id="kop-niet">Wat je vandaag beter níét doet.</h2>
+        <p class="plekregel">Een goed plan weet ook wat eruit moet</p>
+      </header>
+      <div class="paneel">
+        <p>Heb je kort geslapen of zit je avond vol, dan zegt LIFE dat voordat je eraan begint. Met een reden erbij, en een lichter alternatief.</p>
+      </div>
+      <div class="paneel rechts app" aria-label="Voorbeeld van liever-niet-suggesties">
+        <div class="app-kop"><b>Liever niet vandaag</b><span class="voorbeeld">Voorbeeld</span></div>
+        <ul class="liever">
+          <li>
+            <b>Hardlopen, 10 km</b>
+            <span>Je sliep 5 u 40 en hebt vanavond een oudergesprek.</span>
+            <em>Wandel in plaats daarvan 30 minuten.</em>
+          </li>
+          <li>
+            <b>Boodschappen na het werk</b>
+            <span>Je bent pas om 18:15 thuis en het eten staat om 18:30 op tafel.</span>
+            <em>Bestel ze vanavond, bezorging morgenochtend.</em>
+          </li>
+          <li>
+            <b>Een extra uur werken</b>
+            <span>Je zit vandaag al op 9 uur.</span>
+            <em>Zet het op donderdag, daar is ruimte.</em>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="hoofdstuk" id="mensen" data-scene="seceda" data-tijd="18:30" data-plek="Avond" aria-labelledby="kop-mensen">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop">
+        <p class="tijdregel"><b>18:30</b> avond</p>
+        <h2 id="kop-mensen">Mensen staan niet onderaan je lijst.</h2>
+        <p class="plekregel">Gezin en vrienden krijgen een vaste plek</p>
+      </header>
+      <div class="paneel">
+        <p>Twee afspraken op dezelfde avond? LIFE geeft geen melding en laat je zitten, maar stelt een oplossing voor waar iedereen mee kan leven.</p>
+      </div>
+      <div class="paneel rechts app" aria-label="Voorbeeld van een agenda-overlap">
+        <div class="app-kop"><b>Vrijdag · twee afspraken botsen</b><span class="voorbeeld">Voorbeeld</span></div>
+        <ul class="botsing">
+          <li><time>18:30</time><span>Zwemles ophalen</span><em>Gezin</em></li>
+          <li><time>19:00</time><span>Eten met Sanne</span><em>Vrienden</em></li>
+        </ul>
+        <div class="voorstel">
+          <b>Voorstel</b>
+          <p>Schuif het etentje naar 20:00. Dan haal je de zwemles op, eet je kort mee en ben je om 19:45 bij Sanne.</p>
+          <div class="knoppen"><span class="knopje knopje--vol">Stuur voorstel</span><span class="knopje">Laat zo</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hoofdstuk" id="rust" data-scene="vestrahorn" data-tijd="22:00" data-plek="Nacht" aria-labelledby="kop-rust">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop">
+        <p class="tijdregel"><b>22:00</b> nacht</p>
+        <h2 id="kop-rust">De dag sluit af. Morgen start rustig.</h2>
+        <p class="plekregel">Rust telt ook mee</p>
+      </header>
+      <div class="paneel">
+        <p>Zie wat gelukt is, laat los wat niet gelukt is en kijk naar morgen. Wat blijft liggen schuift LIFE door naar een dag waar ruimte voor is, zonder dat jij het hoeft te herplannen.</p>
+      </div>
+      <div class="paneel rechts app" aria-label="Voorbeeld van de dagafsluiting">
+        <div class="app-kop"><b>Dagafsluiting</b><span class="voorbeeld">Voorbeeld</span></div>
+        <dl class="feiten">
+          <div><dt>Gedaan</dt><dd>5 van 7</dd></div>
+          <div><dt>Doorgeschoven</dt><dd>2 naar do.</dd></div>
+          <div><dt>Naar bed</dt><dd>22:30</dd></div>
+        </dl>
+        <p class="app-noot">Morgen is een drukke dag. Met een uur extra slaap houd je hem haalbaar.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="colofon" aria-labelledby="kop-colofon">
+    <div class="colofon-binnen">
+      <div>
+        <h2 id="kop-colofon">Je hele dag, op elkaar afgestemd.</h2>
+        <p class="inleiding">LIFE is nog in ontwikkeling. Laat je e-mailadres achter als je het als een van de eersten wilt proberen.</p>
+      </div>
+      <form class="wacht" id="wachtlijst" novalidate>
+        <label for="wacht-mail">E-mailadres</label>
+        <div class="wacht-rij">
+          <input id="wacht-mail" name="email" type="email" autocomplete="email" placeholder="jij@voorbeeld.nl" required>
+          <button type="submit" class="knopje knopje--vol">Zet me op de lijst</button>
+        </div>
+        <p class="wacht-melding" id="wacht-melding" role="status"></p>
+      </form>
+      <div class="uitleg">
+        <div>
+          <h3>Hoe LIFE een plan maakt</h3>
+          <p>Het begint bij wat vaststaat: werktijden, schooltijden, afspraken. Daarna komt wat je wilt, zoals sport of tijd met vrienden. LIFE rekent met je slaap, je reistijd en hoe vol je dag al zit, en laat weg wat niet past.</p>
+        </div>
+        <div>
+          <h3>Wat de voorbeelden zijn</h3>
+          <p>De agenda's, namen en cijfers op deze pagina zijn verzonnen voorbeelden om te laten zien hoe LIFE eruit kan zien. Ze komen niet uit een echte app.</p>
+        </div>
+        <div>
+          <h3>Over de landschappen</h3>
+          <p>De landschappen zijn illustraties in de browser getekend en maken plaats voor foto's. Staat bewegingsreductie aan op je apparaat, dan blijven de lagen stil.</p>
+        </div>
+      </div>
+      <p class="voet"><span>LIFE · concept · oktober 2026</span><span>Er wordt niets opgeslagen of verstuurd.</span></p>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  // Alle lagen delen één tekenvlak van 1600 × 1000 en worden met "slice" over het podium
+  // gelegd, zodat ze bij elke schermverhouding op elkaar blijven passen. Vormen lopen door tot
+  // BODEM (ver onder het tekenvlak) zodat een laag die omhoog schuift nooit een gat laat zien.
+  const B = 1600, H = 1000, BODEM = 2800;
+  const r1 = n => Math.round(n * 10) / 10;
+
+  // ── Toeval en ruis: vaste zaden, dus elke keer hetzelfde landschap ──────────
+  function willekeur(zaad) {
+    let a = zaad >>> 0;
+    return () => {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function maakRuis(zaad) {
+    const r = willekeur(zaad), tabel = new Float32Array(512);
+    for (let i = 0; i < 512; i++) tabel[i] = r();
+    return x => {
+      const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f);
+      const a = tabel[i & 511], b = tabel[(i + 1) & 511];
+      return a + (b - a) * u;
+    };
+  }
+  function fbm(zaad, octaven = 5, demping = 0.5) {
+    const ruis = maakRuis(zaad);
+    return x => {
+      let som = 0, amp = 1, freq = 1, totaal = 0;
+      for (let o = 0; o < octaven; o++) {
+        som += amp * ruis(x * freq + o * 17.31);
+        totaal += amp; amp *= demping; freq *= 2.03;
+      }
+      return som / totaal;
+    };
+  }
+  const glad = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+  // ── Vormen die op een bergkam worden opgeteld ───────────────────────────────
+  const berg = (cx, breed, hoog, k = 1.4) => x => { const t = 1 - Math.abs(x - cx) / breed; return t > 0 ? hoog * t ** k : 0; };
+  const heuvel = (cx, breed, hoog) => x => hoog * Math.exp(-(((x - cx) / breed) ** 2));
+  const spits = (cx, breed, hoog) => x => { const d = Math.abs(x - cx) / breed; return d < 1 ? hoog * (1 - d) ** 0.75 : 0; };
+
+  function kam({ zaad, basis, hoogte = 0, golf = 300, octaven = 5, demping = 0.5, scherp = false, vormen = [], stap = 4 }) {
+    const f = fbm(zaad, octaven, demping);
+    const punten = [];
+    for (let x = -120; x <= B + 120; x += stap) {
+      let n = f(x / golf);
+      if (scherp) n = 1 - Math.abs(2 * n - 1);
+      let y = basis - hoogte * n;
+      for (const v of vormen) y -= v(x);
+      punten.push([x, y]);
+    }
+    return punten;
+  }
+  function vlak(punten, bodem = BODEM) {
+    let d = `M${punten[0][0]} ${bodem}`;
+    for (const [x, y] of punten) d += `L${r1(x)} ${r1(y)}`;
+    return d + `L${punten[punten.length - 1][0]} ${bodem}Z`;
+  }
+  function lijn(punten) { return 'M' + punten.map(([x, y]) => `${r1(x)} ${r1(y)}`).join('L'); }
+  function wand(punten, as) {
+    return `M${punten[0][0]} ${as}` + punten.map(([x, y]) => `L${r1(x)} ${r1(y)}`).join('') + `L${punten[punten.length - 1][0]} ${as}Z`;
+  }
+  function spiegel(punten, as) {
+    return `M${punten[0][0]} ${as}` + punten.map(([x, y]) => `L${r1(x)} ${r1(Math.max(as, 2 * as - y))}`).join('') + `L${punten[punten.length - 1][0]} ${as}Z`;
+  }
+  function hoogteOp(punten, x) {
+    const x0 = punten[0][0], stap = punten[1][0] - x0;
+    const i = Math.max(0, Math.min(punten.length - 2, Math.floor((x - x0) / stap)));
+    const [ax, ay] = punten[i], [, by] = punten[i + 1];
+    return ay + (by - ay) * ((x - ax) / stap);
+  }
+
+  // ── Verlopen en gloed ───────────────────────────────────────────────────────
+  function verloop(id, stops, { x1 = 0, y1 = 0, x2 = 0, y2 = 1, ruimte = 'objectBoundingBox' } = {}) {
+    return `<linearGradient id="${id}" gradientUnits="${ruimte}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">` +
+      stops.map(([o, k, a = 1]) => `<stop offset="${o}" stop-color="${k}" stop-opacity="${a}"/>`).join('') +
+      `</linearGradient>`;
+  }
+  function verticaal(id, van, tot, stops) { return verloop(id, stops, { ruimte: 'userSpaceOnUse', y1: van, y2: tot }); }
+  function lucht(s, stops, tot) {
+    const id = s.id();
+    return { defs: verticaal(id, 0, tot, stops), inhoud: `<rect x="-2000" y="-2000" width="${B + 4000}" height="${BODEM + 2000}" fill="url(#${id})"/>` };
+  }
+  function gloedVlak(s, cx, cy, r, kleur, sterkte) {
+    const id = s.id();
+    return {
+      defs: `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${r}"><stop offset="0" stop-color="${kleur}" stop-opacity="${sterkte}"/><stop offset="1" stop-color="${kleur}" stop-opacity="0"/></radialGradient>`,
+      inhoud: `<rect x="-600" y="-600" width="${B + 1200}" height="${H + 1200}" fill="url(#${id})"/>`,
+    };
+  }
+  function mist(s, midden, hoogte, sterkte, kleur = '#ffffff') {
+    const id = s.id();
+    return {
+      defs: verloop(id, [[0, kleur, 0], [0.5, kleur, sterkte], [1, kleur, 0]]),
+      inhoud: `<rect x="-200" y="${midden - hoogte / 2}" width="${B + 400}" height="${hoogte}" fill="url(#${id})"/>`,
+    };
+  }
+  function vervaag(s, sterkte) {
+    const id = s.id();
+    return { id, defs: `<filter id="${id}" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="${sterkte}"/></filter>` };
+  }
+
+  // ── Begroeiing en details ───────────────────────────────────────────────────
+  function spar(x, y, h, r) {
+    const zijde = teken => {
+      const w = h * (0.16 + r() * 0.07), n = 7, p = [];
+      for (let i = 1; i <= n; i++) {
+        const t = i / n, yy = y - h + h * 0.9 * t, ww = w * (0.22 + 0.78 * t) * (0.8 + r() * 0.4);
+        p.push([x + teken * ww, yy]);
+        if (i < n) p.push([x + teken * ww * 0.35, yy - h * 0.025]);
+      }
+      p.push([x + teken * h * 0.025, y - h * 0.1], [x + teken * h * 0.025, y + 6]);
+      return p;
+    };
+    const rechts = zijde(1), links = zijde(-1).reverse();
+    return `M${r1(x)} ${r1(y - h)}` + rechts.concat(links).map(([a, b]) => `L${r1(a)} ${r1(b)}`).join('') + 'Z';
+  }
+  function bos(punten, r, { van = -120, tot = B + 120, tussen = [10, 26], hoogte = [30, 70], zak = 4 } = {}) {
+    let d = '';
+    for (let x = van; x < tot; x += tussen[0] + r() * (tussen[1] - tussen[0])) {
+      d += spar(x, hoogteOp(punten, x) + zak, hoogte[0] + r() * (hoogte[1] - hoogte[0]), r);
+    }
+    return d;
+  }
+  // Grove den: een lange, licht scheve stam met de kruin in losse pluken langs het bovenste
+  // derde deel. Eén platte schijf bovenop leek op een acacia; de pluken op verschillende
+  // hoogtes maken hem herkenbaar als den.
+  function groveDen(x, y, h, r, kleur) {
+    const scheef = (r() - 0.5) * h * 0.14;
+    const topX = x + scheef, topY = y - h, dik = Math.max(2.5, h * 0.022);
+    const opStam = t => [x + scheef * t ** 1.4, y - h * t];
+    let s = `<path d="M${r1(x - dik)} ${r1(y + 6)}Q${r1(x - dik * 0.7 + scheef * 0.25)} ${r1(y - h * 0.5)} ${r1(topX - dik * 0.3)} ${r1(topY)}L${r1(topX + dik * 0.3)} ${r1(topY)}Q${r1(x + dik * 0.7 + scheef * 0.25)} ${r1(y - h * 0.5)} ${r1(x + dik)} ${r1(y + 6)}Z"/>`;
+    let takken = '';
+    const pluken = 12 + Math.floor(r() * 4);
+    for (let i = 0; i < pluken; i++) {
+      const t = 0.68 + (i / (pluken - 1)) * 0.3 + (r() - 0.5) * 0.04;
+      const [sx, sy] = opStam(t);
+      const kant = i % 2 ? 1 : -1;
+      const uit = h * (0.03 + r() * 0.15) * (1.3 - t);
+      const cx = sx + kant * uit, cy = sy - h * (r() * 0.03);
+      const rx = h * (0.05 + r() * 0.045), ry = h * (0.024 + r() * 0.02), hoek = (r() - 0.5) * 24;
+      s += `<ellipse cx="${r1(cx)}" cy="${r1(cy)}" rx="${r1(rx)}" ry="${r1(ry)}" transform="rotate(${r1(hoek)} ${r1(cx)} ${r1(cy)})"/>`;
+      takken += `M${r1(sx)} ${r1(sy + h * 0.02)}L${r1(cx - kant * rx * 0.3)} ${r1(cy + ry * 0.4)}`;
+    }
+    s += `<ellipse cx="${r1(topX)}" cy="${r1(topY + h * 0.03)}" rx="${r1(h * 0.06)}" ry="${r1(h * 0.04)}"/>`;
+    return `<g fill="${kleur}">${s}<path d="${takken}" fill="none" stroke="${kleur}" stroke-width="${r1(dik * 0.5)}" stroke-linecap="round"/></g>`;
+  }
+  function pollen(punten, r, { van = -120, tot = B + 120, tussen = [10, 30], hoogte = [18, 44], max = Infinity } = {}) {
+    let d = '';
+    for (let x = van; x < tot; x += tussen[0] + r() * (tussen[1] - tussen[0])) {
+      const y0 = hoogteOp(punten, x) + 4;
+      if (y0 > max) continue;
+      const sprieten = 5 + Math.floor(r() * 7);
+      for (let i = 0; i < sprieten; i++) {
+        const bx = x + (r() - 0.5) * 12, h = hoogte[0] + r() * (hoogte[1] - hoogte[0]);
+        const schuin = (r() - 0.5) * h * 0.9 + h * 0.18; // wind uit het westen
+        d += `M${r1(bx)} ${r1(y0)}Q${r1(bx + schuin * 0.15)} ${r1(y0 - h * 0.6)} ${r1(bx + schuin)} ${r1(y0 - h)}`;
+      }
+    }
+    return d;
+  }
+  function sterren(r, aantal, yMax, helder = 1) {
+    let s = '';
+    for (let i = 0; i < aantal; i++) {
+      const x = r() * B, y = r() ** 1.3 * yMax, rad = 0.5 + r() ** 3 * 1.6, a = (0.25 + r() * 0.75) * helder;
+      s += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(rad)}" fill="#fff" fill-opacity="${a.toFixed(2)}"/>`;
+    }
+    return s;
+  }
+  function sneeuw(punten, zaad, grens, golving) {
+    const f = fbm(zaad, 4);
+    let d = '', reeks = [];
+    const sluit = () => {
+      if (reeks.length > 1) {
+        d += 'M' + reeks.map(([x, y]) => `${r1(x)} ${r1(y)}`).join('L') + 'L' +
+          reeks.slice().reverse().map(([x, , g]) => `${r1(x)} ${r1(g)}`).join('L') + 'Z';
+      }
+      reeks = [];
+    };
+    for (const [x, y] of punten) {
+      const g = grens + (f(x / 26) - 0.5) * golving * 2;
+      if (y < g) reeks.push([x, y, g]); else sluit();
+    }
+    sluit();
+    return d;
+  }
+  function lint(r, y, dikte, van, tot, kronkel = 6) {
+    const f = fbm(Math.floor(r() * 1e6), 3), g = fbm(Math.floor(r() * 1e6), 2);
+    const boven = [], onder = [];
+    for (let x = van; x <= tot; x += 8) {
+      const t = (x - van) / (tot - van);
+      const yy = y + (f(x / 170) - 0.5) * dikte * kronkel;
+      const w = dikte * Math.sin(Math.PI * t) ** 0.6 * (0.5 + g(x / 60));
+      boven.push([x, yy - w / 2]); onder.push([x, yy + w / 2]);
+    }
+    return 'M' + boven.map(([a, b]) => `${r1(a)} ${r1(b)}`).join('L') + 'L' + onder.reverse().map(([a, b]) => `${r1(a)} ${r1(b)}`).join('L') + 'Z';
+  }
+  function glinster(r, cx, van, tot, kleur) {
+    let s = '';
+    for (let i = 0; i < 48; i++) {
+      const t = i / 47, y = van + (tot - van) * t ** 1.7;
+      const w = (8 + t * 130) * (0.35 + r() * 0.9), x = cx - w / 2 + (r() - 0.5) * (6 + t * 70);
+      s += `<rect x="${r1(x)}" y="${r1(y)}" width="${r1(w)}" height="${r1(1 + t * 3)}" fill="${kleur}" fill-opacity="${((0.85 - t * 0.55) * (0.45 + r() * 0.55)).toFixed(2)}"/>`;
+    }
+    return s;
+  }
+  function meeuwen(lijst, kleur) {
+    const d = lijst.map(([x, y, g = 9]) =>
+      `M${x - g} ${r1(y - g * 0.2)}Q${r1(x - g * 0.5)} ${r1(y - g * 0.7)} ${x} ${y}Q${r1(x + g * 0.5)} ${r1(y - g * 0.7)} ${x + g} ${r1(y - g * 0.2)}`).join('');
+    return `<path d="${d}" fill="none" stroke="${kleur}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  function noorderlicht(s, zaad, { basis, amp, fase, van, tot, hoog }) {
+    const id = s.id(), wazig = vervaag(s, 5), r = willekeur(zaad), f = fbm(zaad + 1, 4);
+    let stralen = '';
+    for (let x = van; x <= tot; x += 5) {
+      const yc = basis - amp * Math.sin((x - van) / 380 + fase) - amp * 0.35 * Math.sin(x / 120 + fase * 2);
+      const h = hoog * (0.35 + f(x / 140));
+      const rand = Math.sin(Math.PI * (x - van) / (tot - van));
+      stralen += `<rect x="${x}" y="${r1(yc - h)}" width="6" height="${r1(h)}" fill="url(#${id})" opacity="${(rand * (0.35 + r() * 0.65)).toFixed(2)}"/>`;
+    }
+    return {
+      defs: verloop(id, [[0, '#9a7fe0', 0], [0.4, '#58d6a6', 0.22], [0.86, '#8ef7c6', 0.85], [1, '#d6ffe9', 0]]) + wazig.defs,
+      inhoud: `<g filter="url(#${wazig.id})">${stralen}</g>`,
+    };
+  }
+
+  // ── Een scène is een lijst lagen, van achter naar voor ──────────────────────
+  function scène(naam) {
+    let teller = 0;
+    const lagen = [];
+    return {
+      lagen,
+      id: () => `${naam}-${++teller}`,
+      laag(snelheid, naamLaag) {
+        const l = { snelheid, naam: naamLaag, defs: '', inhoud: '', golven: null };
+        lagen.push(l);
+        return l;
+      },
+    };
+  }
+  const voeg = (l, deel) => { l.defs += deel.defs || ''; l.inhoud += deel.inhoud || ''; };
+
+  const scènes = {
+    held() {
+      const s = scène('held'), r = willekeur(11);
+      const l0 = s.laag(0, 'Lucht');
+      voeg(l0, lucht(s, [[0, '#111a2b'], [0.4, '#2c3858'], [0.64, '#69688a'], [0.83, '#c18d8b'], [1, '#efc3a3']], 700));
+      voeg(l0, gloedVlak(s, 1000, 650, 600, '#ffd8b0', 0.55));
+      l0.inhoud += sterren(r, 80, 320, 0.5);
+
+      const l1 = s.laag(0.03, 'Verre bergen');
+      const k1 = kam({ zaad: 21, basis: 650, hoogte: 170, golf: 230, octaven: 6, vormen: [berg(1100, 360, 120), berg(380, 300, 70)] });
+      l1.inhoud += `<path d="${vlak(k1)}" fill="#958fae"/>`;
+      voeg(l1, mist(s, 620, 180, 0.5, '#f2d2c6'));
+
+      // De titel schuift hier tussen (data-voor="2"): vóór de verre bergen, achter de rest,
+      // zodat de toppen over de onderkant van de letters vallen.
+      const l2 = s.laag(0.07, 'Bergen');
+      const k2 = kam({ zaad: 34, basis: 720, hoogte: 160, golf: 260, octaven: 6, vormen: [berg(720, 420, 250, 1.5), berg(1320, 320, 110)] });
+      l2.inhoud += `<path d="${vlak(k2)}" fill="#6a6888"/>`;
+      voeg(l2, mist(s, 700, 160, 0.4, '#e8c4c0'));
+
+      const l3 = s.laag(0.16, 'Heuvels');
+      const k3 = kam({ zaad: 47, basis: 780, hoogte: 120, golf: 210, vormen: [berg(240, 520, 150), berg(1480, 420, 130)] });
+      l3.inhoud += `<path d="${vlak(k3)}" fill="#45445f"/>`;
+      voeg(l3, mist(s, 790, 120, 0.3, '#d9b3b6'));
+
+      const l4 = s.laag(0.26, 'Bos');
+      const k4 = kam({ zaad: 58, basis: 870, hoogte: 90, golf: 260, vormen: [heuvel(1000, 380, 60)] });
+      l4.inhoud += `<path d="${vlak(k4)}" fill="#282839"/><path d="${bos(k4, r, { tussen: [9, 20], hoogte: [26, 58] })}" fill="#282839"/>`;
+
+      const l5 = s.laag(0.42, 'Voorgrond');
+      const k5 = kam({ zaad: 69, basis: 980, hoogte: 70, golf: 300, vormen: [berg(1350, 520, 130), berg(150, 360, 90)] });
+      l5.inhoud += `<path d="${vlak(k5)}" fill="#11111a"/><path d="${bos(k5, r, { tussen: [14, 34], hoogte: [60, 140], zak: 6 })}" fill="#11111a"/>`;
+      return s.lagen;
+    },
+
+    wad() {
+      const s = scène('wad'), r = willekeur(101), horizon = 585, zon = 960;
+      const l0 = s.laag(0, 'Lucht');
+      voeg(l0, lucht(s, [[0, '#252e48'], [0.36, '#5b5c7c'], [0.62, '#b4878e'], [0.82, '#e9a783'], [1, '#f8d4a4']], horizon));
+      voeg(l0, gloedVlak(s, zon, horizon - 10, 480, '#ffdcae', 0.75));
+      l0.inhoud += `<circle cx="${zon}" cy="${horizon - 12}" r="30" fill="#fff2d9"/>`;
+
+      const l1 = s.laag(0.02, 'Horizon en water');
+      const wid = s.id();
+      l1.defs += verticaal(wid, horizon, horizon + 420, [[0, '#f4caa0'], [0.06, '#e2ab95'], [0.38, '#8d7f97'], [1, '#3d3f58']]);
+      l1.inhoud += `<rect x="-200" y="${horizon}" width="${B + 400}" height="${BODEM}" fill="url(#${wid})"/>`;
+      const fk = fbm(7, 3), kust = [], eiland = [];
+      for (let x = -120; x <= 560; x += 6) kust.push([x, horizon - 2 - 12 * fk(x / 30) * (1 - glad(380, 560, x))]);
+      for (let x = 1260; x <= 1720; x += 6) eiland.push([x, horizon - 2 - 10 * fk(x / 26 + 40) * glad(1260, 1400, x)]);
+      l1.inhoud += `<path d="${wand(kust, horizon + 1)}${wand(eiland, horizon + 1)}" fill="#4a465b"/>`;
+      l1.inhoud += glinster(r, zon, horizon + 3, 1000, '#ffe6c2');
+      l1.inhoud += meeuwen([[640, 300], [676, 286], [712, 318, 7], [1210, 250, 7], [1238, 262, 6]], '#2b2a3c');
+
+      const l2 = s.laag(0.07, 'Platen en geulen');
+      l2.inhoud += `<path d="${lint(r, 612, 6, -120, 760, 1.4)}${lint(r, 642, 11, 820, 1720, 1.4)}${lint(r, 690, 20, -120, 980, 1.2)}${lint(r, 768, 34, 560, 1720, 1.1)}" fill="#6e6270"/>`;
+      l2.inhoud += `<path d="${lint(r, 626, 4, 260, 1300, 1.6)}${lint(r, 724, 10, -120, 1120, 1.4)}" fill="#f1c39e" fill-opacity="0.55"/>`;
+
+      const l3 = s.laag(0.15, 'Duin');
+      const k3 = kam({ zaad: 113, basis: 1090, hoogte: 40, golf: 200, octaven: 4, vormen: [heuvel(260, 440, 340), heuvel(-80, 260, 240)] });
+      const did = s.id();
+      l3.defs += verticaal(did, 690, 1000, [[0, '#3b3242'], [1, '#1f1b26']]);
+      l3.inhoud += `<path d="${vlak(k3)}" fill="url(#${did})"/>`;
+      l3.inhoud += `<path d="${pollen(k3, r, { van: -120, tot: 720, tussen: [12, 30], hoogte: [16, 40] })}" fill="none" stroke="#2c2633" stroke-width="2" stroke-linecap="round"/>`;
+
+      const l4 = s.laag(0.25, 'Helm');
+      const k4 = kam({ zaad: 127, basis: 1130, hoogte: 30, golf: 160, octaven: 4, vormen: [heuvel(1300, 380, 200), heuvel(560, 300, 70)] });
+      l4.inhoud += `<path d="${vlak(k4)}" fill="#15121a"/>`;
+      l4.inhoud += `<path d="${pollen(k4, r, { van: 380, tot: 1720, tussen: [9, 22], hoogte: [30, 86] })}" fill="none" stroke="#15121a" stroke-width="2.4" stroke-linecap="round"/>`;
+      return s.lagen;
+    },
+
+    veluwe() {
+      const s = scène('veluwe'), r = willekeur(202);
+      const l0 = s.laag(0, 'Lucht');
+      voeg(l0, lucht(s, [[0, '#8aa0b6'], [0.45, '#c3c8c7'], [0.78, '#e9e0cf'], [1, '#f2e8d6']], 640));
+      voeg(l0, gloedVlak(s, 700, 360, 560, '#fff6e2', 0.8));
+      l0.inhoud += `<circle cx="700" cy="360" r="44" fill="#fffbf2" fill-opacity="0.9"/>`;
+
+      const l1 = s.laag(0.02, 'Verre bosrand');
+      const k1 = kam({ zaad: 211, basis: 650, hoogte: 30, golf: 16, octaven: 3, vormen: [heuvel(1150, 520, 34), heuvel(300, 400, 20)] });
+      l1.inhoud += `<path d="${vlak(k1)}" fill="#b3b8b3"/>`;
+      voeg(l1, mist(s, 630, 150, 0.75, '#f7f3ea'));
+
+      const l2 = s.laag(0.06, 'Stuwwal');
+      const hf = fbm(224, 3);
+      const k2 = kam({ zaad: 223, basis: 712, hoogte: 30, golf: 300, octaven: 3, vormen: [heuvel(420, 420, 110), heuvel(1250, 360, 80), heuvel(850, 300, 30), x => 16 * hf(x / 11)] });
+      l2.inhoud += `<path d="${vlak(k2)}" fill="#8e958f"/>`;
+      voeg(l2, mist(s, 712, 150, 0.6, '#f4efe6'));
+
+      const l3 = s.laag(0.11, 'Heide in de verte');
+      const k3 = kam({ zaad: 239, basis: 800, hoogte: 30, golf: 120, octaven: 4, vormen: [heuvel(900, 600, 70)] });
+      l3.inhoud += `<path d="${vlak(k3)}" fill="#7a6c7e"/>`;
+      let groepjes = '';
+      for (const [van, tot] of [[130, 290], [580, 660], [1210, 1340], [1440, 1520]]) {
+        for (let x = van; x < tot; x += 10 + r() * 16) groepjes += spar(x, hoogteOp(k3, x) + 4, 34 + r() * 40, r);
+      }
+      l3.inhoud += `<path d="${groepjes}" fill="#5f655f"/>`;
+      voeg(l3, mist(s, 806, 110, 0.35, '#efe8e0'));
+
+      const l4 = s.laag(0.18, 'Heide');
+      const k4 = kam({ zaad: 251, basis: 910, hoogte: 40, golf: 90, octaven: 5, vormen: [heuvel(260, 500, 90), heuvel(1350, 420, 70)] });
+      const hid = s.id(), pid = s.id(), rp = willekeur(252);
+      l4.defs += verticaal(hid, 780, 1000, [[0, '#80527c'], [1, '#4a3049']]);
+      let stippen = '';
+      for (let i = 0; i < 26; i++) stippen += `<circle cx="${r1(rp() * 90)}" cy="${r1(rp() * 60)}" r="${r1(0.8 + rp() * 1.6)}" fill="${rp() > 0.5 ? '#c28ab9' : '#2d1c2c'}" fill-opacity="0.55"/>`;
+      l4.defs += `<pattern id="${pid}" patternUnits="userSpaceOnUse" width="90" height="60">${stippen}</pattern>`;
+      l4.inhoud += `<path d="${vlak(k4)}" fill="url(#${hid})"/><path d="${vlak(k4)}" fill="url(#${pid})"/>`;
+      l4.inhoud += groveDen(990, hoogteOp(k4, 990), 440, r, '#2b282d');
+      l4.inhoud += groveDen(380, hoogteOp(k4, 380), 240, r, '#2b282d');
+
+      const l5 = s.laag(0.27, 'Voorgrond');
+      const k5 = kam({ zaad: 263, basis: 1050, hoogte: 50, golf: 26, octaven: 4, vormen: [heuvel(1500, 300, 70), heuvel(80, 300, 60)] });
+      l5.inhoud += `<path d="${vlak(k5)}" fill="#24182a"/>`;
+      return s.lagen;
+    },
+
+    fjord() {
+      const s = scène('fjord'), r = willekeur(303), water = 650;
+      const l0 = s.laag(0, 'Lucht');
+      voeg(l0, lucht(s, [[0, '#46698f'], [0.5, '#86a7c4'], [1, '#d7e3ea']], 600));
+      const wolk = vervaag(s, 18);
+      l0.defs += wolk.defs;
+      l0.inhoud += `<g filter="url(#${wolk.id})" fill="#ffffff" fill-opacity="0.55"><ellipse cx="300" cy="180" rx="220" ry="40"/><ellipse cx="1200" cy="140" rx="260" ry="46"/><ellipse cx="820" cy="250" rx="180" ry="30"/></g>`;
+
+      const l1 = s.laag(0.02, 'Verre bergen en water');
+      const k1 = kam({ zaad: 311, basis: 630, hoogte: 120, golf: 160, octaven: 6, scherp: true, vormen: [berg(800, 300, 150), berg(1050, 220, 80)] });
+      l1.inhoud += `<path d="${vlak(k1)}" fill="#9badbf"/><path d="${sneeuw(k1, 312, 520, 26)}" fill="#f2f6f9"/>`;
+      const wid = s.id();
+      l1.defs += verticaal(wid, water, water + 380, [[0, '#aac0cf'], [0.2, '#6d8ca3'], [1, '#22384a']]);
+      l1.inhoud += `<rect x="-200" y="${water}" width="${B + 400}" height="${BODEM}" fill="url(#${wid})"/>`;
+      l1.inhoud += `<path d="${spiegel(k1, water)}" fill="#9badbf" fill-opacity="0.32"/>`;
+      // Een veerboot met kielzog: geeft de wanden hun schaal.
+      l1.inhoud += `<g transform="translate(790 706)"><path d="M-15 0H15L11 4H-11Z" fill="#f2f5f7"/><rect x="-8" y="-5" width="13" height="5" fill="#e3e9ed"/><path d="M15 2L70 -3M15 3L74 11" stroke="#d5e1e8" stroke-opacity="0.6" stroke-width="1.2" fill="none"/></g>`;
+
+      const l2 = s.laag(0.06, 'Linkerwand');
+      const fL = fbm(322, 5), links = [];
+      for (let x = -120; x <= 560; x += 4) { const t = (x + 120) / 680; links.push([x, 110 + 360 * t ** 1.15 + (fL(x / 70) - 0.5) * 70]); }
+      links.push([590, 520], [612, 590], [628, water - 6], [640, water]);
+      const lw = s.id(), lr = s.id();
+      l2.defs += verticaal(lw, 100, water, [[0, '#71847b'], [1, '#3e4f4b']]) + verticaal(lr, water, water + 520, [[0, '#5b6e6c'], [1, '#22343c']]);
+      l2.inhoud += `<path d="${wand(links, water)}" fill="url(#${lw})"/><path d="${spiegel(links, water)}" fill="url(#${lr})"/>`;
+
+      const l3 = s.laag(0.09, 'Rechterwand met de Zeven Zussen');
+      const fR = fbm(333, 5), rechts = [];
+      for (let x = 1720; x >= 990; x -= 4) { const t = (1720 - x) / 730; rechts.push([x, 80 + 380 * t ** 1.1 + (fR(x / 70) - 0.5) * 70]); }
+      const wl = water + 8;
+      rechts.push([965, 520], [945, 600], [930, wl - 4], [915, wl]);
+      const rw = s.id(), rr = s.id();
+      l3.defs += verticaal(rw, 80, wl, [[0, '#7a8a84'], [1, '#43534f']]) + verticaal(rr, wl, wl + 520, [[0, '#617371'], [1, '#22343c']]);
+      l3.inhoud += `<path d="${wand(rechts, wl)}" fill="url(#${rw})"/><path d="${spiegel(rechts, wl)}" fill="url(#${rr})"/>`;
+      // Precies zeven stromen. Een breed, zacht spoor met een smalle heldere kern erin.
+      let zacht = '', kern = '';
+      [978, 994, 1009, 1027, 1046, 1062, 1081].forEach((x, i) => {
+        const top = hoogteOp(rechts.slice().reverse(), x) + 18 + (i % 3) * 6;
+        let d = `M${x} ${r1(top)}`;
+        for (let y = top + 20; y < wl - 2; y += 20) d += `L${r1(x + Math.sin(y / 23 + i) * 1.6 + (y - top) * 0.012)} ${r1(y)}`;
+        zacht += d; kern += d;
+      });
+      const nevel = vervaag(s, 8);
+      l3.defs += nevel.defs;
+      l3.inhoud += `<path d="${zacht}" fill="none" stroke="#f4f8fa" stroke-opacity="0.32" stroke-width="5" stroke-linecap="round"/><path d="${kern}" fill="none" stroke="#f7fbfc" stroke-opacity="0.9" stroke-width="1.6" stroke-linecap="round"/>`;
+      l3.inhoud += `<ellipse cx="1030" cy="${wl - 4}" rx="80" ry="10" fill="#ffffff" fill-opacity="0.45" filter="url(#${nevel.id})"/>`;
+
+      const l4 = s.laag(0.12, 'Wolkenflarden');
+      const flard = vervaag(s, 14);
+      l4.defs += flard.defs;
+      l4.inhoud += `<g filter="url(#${flard.id})" fill="#ffffff" fill-opacity="0.5"><ellipse cx="300" cy="400" rx="300" ry="24"/><ellipse cx="1260" cy="360" rx="340" ry="28"/><ellipse cx="700" cy="480" rx="200" ry="16"/></g>`;
+
+      const l5 = s.laag(0.2, 'Rotsen met sparren');
+      const k5 = kam({ zaad: 351, basis: 1110, hoogte: 40, golf: 200, vormen: [berg(-40, 760, 560, 1.25)] });
+      l5.inhoud += `<path d="${vlak(k5)}" fill="#1e2a29"/><path d="${bos(k5, r, { van: -120, tot: 600, tussen: [12, 26], hoogte: [50, 120] })}" fill="#1e2a29"/>`;
+
+      const l6 = s.laag(0.3, 'Voorgrond');
+      const k6 = kam({ zaad: 363, basis: 1090, hoogte: 50, golf: 150, vormen: [berg(1600, 620, 230, 1.3)] });
+      l6.inhoud += `<path d="${vlak(k6)}" fill="#121a1a"/><path d="${pollen(k6, r, { van: 1040, tot: 1720, tussen: [14, 30], hoogte: [20, 50] })}" fill="none" stroke="#121a1a" stroke-width="2.2" stroke-linecap="round"/>`;
+      return s.lagen;
+    },
+
+    seceda() {
+      const s = scène('seceda'), r = willekeur(404);
+      const l0 = s.laag(0, 'Lucht');
+      voeg(l0, lucht(s, [[0, '#283453'], [0.38, '#615e85'], [0.64, '#c3878b'], [0.84, '#eea983'], [1, '#f7cf9d']], 700));
+      voeg(l0, gloedVlak(s, 1250, 690, 640, '#ffc995', 0.6));
+      l0.inhoud += sterren(r, 30, 200, 0.35);
+
+      const l1 = s.laag(0.02, 'Verre ketens');
+      const k1 = kam({ zaad: 411, basis: 710, hoogte: 70, golf: 140, scherp: true });
+      l1.inhoud += `<path d="${vlak(k1)}" fill="#85789a"/>`;
+      voeg(l1, mist(s, 700, 120, 0.45, '#f6c7ab'));
+
+      const l2 = s.laag(0.06, 'Geislergroep');
+      const hf = fbm(413, 4);
+      // Elke spits: puntige top, steile flanken, en tussen de spitsen een kerf tot op het massief.
+      const spitsen = [[470, 70, 120], [560, 55, 230], [640, 48, 300], [700, 40, 250], [790, 62, 360], [868, 45, 290], [930, 52, 330], [1012, 70, 250], [1110, 60, 180], [1200, 80, 110]];
+      const kartel = fbm(414, 3);
+      // Het hoogste profiel telt (max, geen som): zo ontstaan kerven waar twee spitsen elkaar raken.
+      const kamlijn = x => Math.max(...spitsen.map(([cx, b, h]) => spits(cx, b, h)(x))) * (0.82 + 0.36 * kartel(x / 7)) + 18 * hf(x / 20);
+      const k2 = kam({ zaad: 412, basis: 760, hoogte: 30, golf: 50, octaven: 4, stap: 2, vormen: [kamlijn, berg(830, 480, 170)] });
+      const gid = s.id();
+      l2.defs += verticaal(gid, 330, 760, [[0, '#f2a588'], [0.28, '#dc8a87'], [0.6, '#8a5f7c'], [1, '#4a3c5d']]);
+      let schaduw = '';
+      for (const [cx, b] of spitsen) {
+        const flank = k2.filter(([x]) => x >= cx && x <= cx + b * 1.05);
+        schaduw += `M${r1(cx)} ${r1(hoogteOp(k2, cx))}` + flank.map(([x, y]) => `L${r1(x)} ${r1(y)}`).join('') + `L${r1(cx + b)} 800L${r1(cx - b * 0.2)} 800Z`;
+      }
+      l2.inhoud += `<path d="${vlak(k2)}" fill="url(#${gid})"/><path d="${schaduw}" fill="#2f2443" fill-opacity="0.32"/><path d="${lijn(k2)}" fill="none" stroke="#ffd7b8" stroke-opacity="0.5" stroke-width="1.4"/>`;
+
+      const l3 = s.laag(0.1, 'Bos');
+      const k3 = kam({ zaad: 421, basis: 810, hoogte: 30, golf: 300, vormen: [heuvel(800, 600, 40)] });
+      l3.inhoud += `<path d="${vlak(k3)}" fill="#3a3550"/><path d="${bos(k3, r, { tussen: [7, 15], hoogte: [16, 34] })}" fill="#3a3550"/>`;
+      voeg(l3, mist(s, 800, 70, 0.25, '#f2b9a2'));
+
+      const l4 = s.laag(0.17, 'Alm');
+      const fa = fbm(441, 4), alm = [];
+      for (let x = -120; x <= B + 120; x += 4) alm.push([x, 990 - 390 * ((x + 120) / 1840) ** 0.8 + (fa(x / 90) - 0.5) * 14]);
+      const aid = s.id();
+      l4.defs += verticaal(aid, 560, 1000, [[0, '#5b6a55'], [1, '#2a3229']]);
+      l4.inhoud += `<path d="${vlak(alm)}" fill="url(#${aid})"/><path d="${lijn(alm)}" fill="none" stroke="#f2b48d" stroke-opacity="0.45" stroke-width="2"/>`;
+
+      const l5 = s.laag(0.27, 'Voorgrond met hooischuur');
+      const k5 = kam({ zaad: 431, basis: 1070, hoogte: 30, golf: 120, vormen: [heuvel(660, 360, 120), heuvel(1500, 300, 80)] });
+      const y0 = hoogteOp(k5, 640);
+      let hek = '';
+      for (let x = 730; x <= 990; x += 26) { const y = hoogteOp(k5, x); hek += `M${x} ${r1(y + 4)}V${r1(y - 26)}`; }
+      const ha = hoogteOp(k5, 730), hb = hoogteOp(k5, 990);
+      hek += `M730 ${r1(ha - 20)}L990 ${r1(hb - 20)}M730 ${r1(ha - 10)}L990 ${r1(hb - 10)}`;
+      l5.inhoud += `<path d="${vlak(k5)}" fill="#181b17"/>`;
+      // Een tabià: houten hooischuur met steil dak, het silhouet van elke Dolomietenalm.
+      l5.inhoud += `<path d="M592 ${r1(y0 + 6)}V${r1(y0 - 54)}L640 ${r1(y0 - 112)}L688 ${r1(y0 - 54)}V${r1(y0 + 6)}Z M578 ${r1(y0 - 48)}L640 ${r1(y0 - 120)}L702 ${r1(y0 - 48)}L696 ${r1(y0 - 44)}L640 ${r1(y0 - 108)}L584 ${r1(y0 - 44)}Z" fill="#121411"/>`;
+      l5.inhoud += `<path d="${hek}" fill="none" stroke="#121411" stroke-width="2.4" stroke-linecap="round"/>`;
+      l5.inhoud += `<path d="${pollen(k5, r, { van: 380, tot: 1720, tussen: [16, 36], hoogte: [10, 26] })}" fill="none" stroke="#181b17" stroke-width="1.8" stroke-linecap="round"/>`;
+      return s.lagen;
+    },
+
+    vestrahorn() {
+      const s = scène('vestrahorn'), r = willekeur(505);
+      const l0 = s.laag(0, 'Lucht');
+      voeg(l0, lucht(s, [[0, '#03050b'], [0.5, '#091327'], [0.82, '#0f2238'], [1, '#163048']], 660));
+      voeg(l0, gloedVlak(s, 800, 640, 700, '#1f6b5a', 0.25));
+      l0.inhoud += sterren(r, 260, 560, 1);
+
+      const l1 = s.laag(0.01, 'Noorderlicht');
+      l1.golven = [
+        noorderlicht(s, 521, { basis: 430, amp: 110, fase: 0.3, van: 60, tot: 1540, hoog: 300 }),
+        noorderlicht(s, 533, { basis: 330, amp: 70, fase: 2.1, van: 300, tot: 1400, hoog: 220 }),
+      ];
+
+      const l2 = s.laag(0.02, 'Verre bergen');
+      const k2 = kam({ zaad: 541, basis: 690, hoogte: 50, golf: 120 });
+      l2.inhoud += `<path d="${vlak(k2)}" fill="#0a1220"/>`;
+
+      const l3 = s.laag(0.05, 'Vestrahorn');
+      const k3 = kam({ zaad: 551, basis: 700, hoogte: 70, golf: 60, octaven: 6, scherp: true, stap: 3, vormen: [berg(800, 560, 280, 1.1), berg(1130, 260, 210, 1.25), berg(560, 220, 150, 1.2), berg(960, 120, 90, 1.6)] });
+      l3.inhoud += `<path d="${vlak(k3)}" fill="#060a12"/><path d="${lijn(k3)}" fill="none" stroke="#64d9ac" stroke-opacity="0.22" stroke-width="1.4"/>`;
+
+      const l4 = s.laag(0.08, 'Lagune');
+      const lid = s.id(), glim = vervaag(s, 12);
+      l4.defs += verticaal(lid, 700, 1000, [[0, '#13303a'], [0.25, '#0b1a24'], [1, '#04070c']]) + glim.defs;
+      l4.inhoud += `<rect x="-200" y="700" width="${B + 400}" height="${BODEM}" fill="url(#${lid})"/>`;
+      l4.inhoud += `<path d="${spiegel(k3.map(([x, y]) => [x, y + 10]), 710)}" fill="#05080e" fill-opacity="0.75"/>`;
+      l4.inhoud += `<ellipse cx="800" cy="738" rx="520" ry="16" fill="#4fd6a2" fill-opacity="0.2" filter="url(#${glim.id})"/>`;
+
+      const l5 = s.laag(0.16, 'Zwarte duinen');
+      const k5 = kam({ zaad: 561, basis: 950, hoogte: 50, golf: 90, octaven: 3, vormen: [heuvel(280, 230, 170), heuvel(1240, 260, 150), heuvel(760, 160, 70)] });
+      l5.inhoud += `<path d="${vlak(k5)}" fill="#05070b"/><path d="${pollen(k5, r, { tussen: [8, 22], hoogte: [18, 44], max: 900 })}" fill="none" stroke="#05070b" stroke-width="2" stroke-linecap="round"/>`;
+
+      const l6 = s.laag(0.26, 'Voorgrond');
+      const k6 = kam({ zaad: 571, basis: 1070, hoogte: 30, golf: 60, vormen: [heuvel(-60, 300, 120), heuvel(1700, 300, 140)] });
+      l6.inhoud += `<path d="${vlak(k6)}" fill="#020306"/><path d="${pollen(k6, r, { tussen: [10, 26], hoogte: [40, 100], max: 1040 })}" fill="none" stroke="#020306" stroke-width="2.6" stroke-linecap="round"/>`;
+      return s.lagen;
+    },
+  };
+
+  // ── Opbouw ──────────────────────────────────────────────────────────────────
+  const svgVoor = (defs, inhoud) =>
+    `<svg viewBox="0 0 ${B} ${H}" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false"><defs>${defs}</defs>${inhoud}</svg>`;
+
+  const pijlTerug = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5v5h5"/><path d="M5.6 15a7 7 0 1 0 1.5-7.2L4 10"/></svg>';
+
+  const scèneLagen = {};
+  const hoofdstukken = [...document.querySelectorAll('.hoofdstuk')].map(sectie => {
+    const podium = sectie.querySelector('.podium');
+    const lagen = scènes[sectie.dataset.scene]();
+    scèneLagen[sectie.dataset.scene] = lagen;
+    const titel = podium.querySelector('.laag-titel');
+    const voor = titel ? Number(titel.dataset.voor) : -1;
+    const frag = document.createDocumentFragment();
+    const bewegend = [];
+    lagen.forEach((l, i) => {
+      if (i === voor) { frag.append(titel); bewegend.push({ el: titel, snelheid: Number(titel.dataset.snelheid) }); }
+      const el = document.createElement('div');
+      el.className = 'laag';
+      el.innerHTML = l.golven
+        ? l.golven.map((g, j) => `<div class="golf golf-${j + 1}">${svgVoor(g.defs, g.inhoud)}</div>`).join('')
+        : svgVoor(l.defs, l.inhoud);
+      frag.append(el);
+      bewegend.push({ el, snelheid: l.snelheid });
+    });
+    const foto = document.createElement('div');
+    foto.className = 'laag laag-foto';
+    frag.append(foto);
+    bewegend.push({ el: foto, snelheid: 0.1 });
+
+    const bijschrift = document.createElement('figcaption');
+    bijschrift.className = 'bijschrift';
+    bijschrift.innerHTML = `<span>Illustratie · staat in voor een foto</span><button type="button" hidden>${pijlTerug}Illustratie terug</button>`;
+    frag.append(bijschrift);
+    podium.replaceChildren(frag);
+
+    const [uur, min] = sectie.dataset.tijd.split(':').map(Number);
+    const h = {
+      sectie, podium, foto, bijschrift, lagen: bewegend,
+      isHeld: sectie.classList.contains('held'),
+      intro: sectie.querySelector('.intro'),
+      minuten: uur * 60 + min,
+      plek: sectie.dataset.plek,
+      naam: sectie.querySelector('h2')?.textContent || 'de opening',
+      fotoUrl: null, actief: false, voorbij: 0,
+    };
+    bijschrift.querySelector('button').addEventListener('click', () => verwijderFoto(h));
+    return h;
+  });
+
+  // ── Beweging ────────────────────────────────────────────────────────────────
+  // Waarom zo. De eerste versie zette elke laag per frame vanuit JavaScript op zijn plek en
+  // trok daarbij de beweging van het podium af. Maar de browser scrolt op een eigen thread en
+  // JavaScript loopt daar altijd een frame achteraan. Binnen een hoofdstuk zie je dat niet (een
+  // laag beweegt hooguit 0,4x zo snel als de pagina), maar tijdens een overgang moest de lucht
+  // de vólle scroll tegenhouden, en sprong hij elk frame heen en weer. Nu is de overgang puur
+  // CSS: het volgende hoofdstuk schuift als een vel over het vorige (sticky plus een negatieve
+  // marge). Daar rekent niemand aan, dus het kan niet haperen. JavaScript beweegt de lagen
+  // alleen nog binnen een hoofdstuk, waar een frame achterlopen hooguit een paar pixels is.
+  // Overwogen en afgevallen: scroll-gestuurde CSS-animaties (animation-timeline). Die lopen in
+  // theorie gelijk met het scrollen, maar waren in onze meting (Chromium zonder GPU) zwaarder:
+  // mediaan 33 tegen 17 ms per frame. Ze werken bovendien nog niet in Firefox.
+  const bewegingUit = matchMedia('(prefers-reduced-motion: reduce)');
+  let gepland = false;
+  const klokEl = document.getElementById('klok'), plekEl = document.getElementById('plek');
+  let actiefHoofdstuk = hoofdstukken[0];
+  const tweeCijfers = n => String(Math.floor(n)).padStart(2, '0');
+
+  function meten() {
+    const ph = hoofdstukken[0].podium.offsetHeight || window.innerHeight;
+    for (const h of hoofdstukken) {
+      const looppad = Math.max(1, h.sectie.offsetHeight - ph);
+      // Het laatste schermhoogte-stuk ligt onder het volgende vel; daar staat de scène stil.
+      // De opening loopt wél door terwijl hij bedekt raakt, anders duurt zijn effect te kort.
+      h.lees = h.isHeld ? looppad : Math.max(1, looppad - ph);
+      h.anker = h.isHeld ? 0 : -h.lees / 2;
+    }
+    plan();
+  }
+
+  function bijwerken() {
+    gepland = false;
+    const vh = window.innerHeight;
+    const stil = bewegingUit.matches;
+    for (const h of hoofdstukken) {
+      const rect = h.sectie.getBoundingClientRect();
+      h.voorbij = h.anker - rect.top;
+      if (rect.top <= vh / 2 && rect.bottom > vh / 2) actiefHoofdstuk = h;
+      const dichtbij = rect.bottom > -vh && rect.top < vh * 2;
+      if (!dichtbij || stil) {
+        if (h.actief) { for (const l of h.lagen) l.el.style.transform = ''; h.actief = false; }
+        if (h.intro) h.intro.style.opacity = '';
+        continue;
+      }
+      h.actief = true;
+      const d = Math.min(0, Math.max(-h.lees, rect.top)) - h.anker;
+      for (const l of h.lagen) l.el.style.transform = `translate3d(0, ${(l.snelheid * d).toFixed(1)}px, 0)`;
+      if (h.intro) h.intro.style.opacity = String(Math.max(0, 1 + Math.min(0, rect.top) / (vh * 0.4)));
+    }
+    // De klok loopt tussen de ankerpunten mee, van blauw uur tot middernacht.
+    let i = 0;
+    for (let k = 0; k < hoofdstukken.length; k++) if (hoofdstukken[k].voorbij >= 0) i = k;
+    const a = hoofdstukken[i], b = hoofdstukken[i + 1];
+    let minuten = a.minuten, plek = a.plek;
+    if (b) {
+      const t = a.voorbij / (a.voorbij - b.voorbij);
+      minuten = a.minuten + (b.minuten - a.minuten) * t;
+      if (t > 0.5) plek = b.plek;
+    }
+    const tijd = `${tweeCijfers(minuten / 60)}:${tweeCijfers(minuten % 60)}`;
+    if (klokEl.textContent !== tijd) klokEl.textContent = tijd;
+    if (plekEl.textContent !== plek) plekEl.textContent = plek;
+  }
+  const plan = () => { if (!gepland) { gepland = true; requestAnimationFrame(bijwerken); } };
+  addEventListener('scroll', plan, { passive: true });
+  addEventListener('resize', meten);
+  bewegingUit.addEventListener?.('change', plan);
+  document.fonts?.ready.then(meten);
+  meten();
+  bijwerken();
+
+  const wacht = document.getElementById('wachtlijst'), wachtMelding = document.getElementById('wacht-melding');
+  wacht.addEventListener('submit', e => {
+    e.preventDefault();
+    const mail = document.getElementById('wacht-mail');
+    wachtMelding.textContent = mail.validity.valid && mail.value
+      ? 'Dit is een concept: je e-mailadres is niet opgeslagen.'
+      : 'Vul een geldig e-mailadres in, bijvoorbeeld jij@voorbeeld.nl.';
+  });
+
+  // ── Eigen foto's ────────────────────────────────────────────────────────────
+  const meldingEl = document.getElementById('melding');
+  let meldingTimer;
+  function meld(tekst) {
+    meldingEl.textContent = tekst;
+    meldingEl.hidden = false;
+    clearTimeout(meldingTimer);
+    meldingTimer = setTimeout(() => { meldingEl.hidden = true; }, 4200);
+  }
+  function plaatsFoto(h, bestand) {
+    if (!bestand) return;
+    if (!bestand.type.startsWith('image/')) { meld('Dat is geen afbeelding. Kies een JPG, PNG of WebP.'); return; }
+    if (h.fotoUrl) URL.revokeObjectURL(h.fotoUrl);
+    h.fotoUrl = URL.createObjectURL(bestand);
+    h.foto.style.backgroundImage = `url("${h.fotoUrl}")`;
+    h.podium.classList.add('heeft-foto');
+    h.bijschrift.querySelector('span').textContent = 'Eigen foto · alleen in deze browser';
+    h.bijschrift.querySelector('button').hidden = false;
+    meld(`Foto geplaatst bij ${h.naam}.`);
+    plan();
+  }
+  function verwijderFoto(h) {
+    if (h.fotoUrl) URL.revokeObjectURL(h.fotoUrl);
+    h.fotoUrl = null;
+    h.foto.style.backgroundImage = '';
+    h.podium.classList.remove('heeft-foto');
+    h.bijschrift.querySelector('span').textContent = 'Illustratie · staat in voor een foto';
+    h.bijschrift.querySelector('button').hidden = true;
+    meld(`Illustratie terug bij ${h.naam}.`);
+  }
+
+  const invoer = document.getElementById('foto-invoer');
+  let doelVoorKiezer = null;
+  document.getElementById('foto-knop').addEventListener('click', () => { doelVoorKiezer = actiefHoofdstuk; invoer.click(); });
+  invoer.addEventListener('change', () => {
+    plaatsFoto(doelVoorKiezer || actiefHoofdstuk, invoer.files[0]);
+    invoer.value = '';
+  });
+
+  let doel = null;
+  const zetDoel = h => {
+    if (doel === h) return;
+    doel?.sectie.classList.remove('doel');
+    doel = h;
+    doel?.sectie.classList.add('doel');
+  };
+  const heeftBestanden = e => [...(e.dataTransfer?.types || [])].includes('Files');
+  addEventListener('dragover', e => {
+    if (!heeftBestanden(e)) return;
+    e.preventDefault();
+    const sectie = document.elementFromPoint(e.clientX, e.clientY)?.closest('.hoofdstuk');
+    const h = hoofdstukken.find(x => x.sectie === sectie) || null;
+    e.dataTransfer.dropEffect = h ? 'copy' : 'none';
+    zetDoel(h);
+  });
+  addEventListener('dragleave', e => { if (!e.relatedTarget) zetDoel(null); });
+  addEventListener('drop', e => {
+    if (!heeftBestanden(e)) return;
+    e.preventDefault();
+    const h = doel;
+    zetDoel(null);
+    if (h) plaatsFoto(h, e.dataTransfer.files[0]);
+  });
+})();
+</script>
