@@ -2,26 +2,86 @@
 <html lang="nl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Vandaag · LIFE</title>
-<link rel="stylesheet" href="/styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="/landschap.css">
 </head>
 <body>
-<main>
-  <div class="dagkop"><h1 id="titel">Vandaag</h1><p id="ondertitel"></p></div>
-  <div class="dagen" id="dagen" role="group" aria-label="Kies een dag"></div>
-  <div class="raster">
-    <div class="stapel">
-      <section class="kaart" aria-labelledby="k-plan"><h2 id="k-plan">Dagplan <small id="plan-info"></small></h2><div id="plan"></div></section>
-    </div>
-    <div class="stapel">
-      <section class="kaart" aria-labelledby="k-score"><h2 id="k-score">Haalbaarheid</h2><div id="score"></div></section>
-      <section class="kaart" id="k-liever" aria-labelledby="k-liever-kop"><h2 id="k-liever-kop">Liever niet vandaag</h2><div id="liever"></div></section>
-      <section class="kaart" id="k-botsing" aria-labelledby="k-botsing-kop" hidden><h2 id="k-botsing-kop">Twee afspraken botsen</h2><div id="botsing"></div></section>
-    </div>
+<header class="balk">
+  <div class="pil merk">
+    <span class="woordmerk">LIFE</span>
+    <span class="chip">Prototype</span>
+  <nav aria-label="Hoofdmenu"><a href="/vandaag.html" aria-current="page">Vandaag</a><a href="/week.html">Week</a></nav>
   </div>
-  <p class="noot">Voorbeeldgegevens, niets wordt opgeslagen. Alle suggesties komen uit vaste regels (docs/planregels.md), niet uit een AI-model.</p>
+  <div class="pil dag">
+    <span class="klok" id="klok" aria-label="Tijd van de dag in dit verhaal">05:40</span>
+    <span class="plek" id="plek">Blauw uur</span>
+    <button class="knop" id="foto-knop" type="button" aria-label="Eigen foto plaatsen in het hoofdstuk dat je nu ziet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.5"/></svg>
+      <span class="knop-tekst">Eigen foto</span>
+    </button>
+    <input type="file" id="foto-invoer" accept="image/*" hidden>
+  </div>
+</header>
+<p class="melding" id="melding" role="status" hidden></p>
+
+
+<main>
+  <section class="hoofdstuk held" data-scene="held" data-tijd="05:40" data-plek="Blauw uur" aria-label="Opening">
+    <figure class="podium">
+      <h1 class="laag laag-titel" data-snelheid="0.12" data-voor="2">LIFE<span class="sr-only">: je dag</span></h1>
+    </figure>
+    <div class="verhaal"><div class="intro"><div class="kop">
+      <p class="tijdregel"><b id="intro-datum">Vandaag</b></p>
+      <p class="lede" id="intro-tekst"></p>
+      <p class="scroll-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg>Scroll door je dag</p>
+    </div></div></div>
+  </section>
+  <section class="hoofdstuk" id="overzicht" data-scene="wad" data-tijd="06:45" data-plek="Overzicht" aria-labelledby="kop-overzicht">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop"><p class="tijdregel"><b>06:45</b> ochtend</p><h2 id="kop-overzicht">Hoe haalbaar is je dag?</h2><p class="plekregel">Kies een dag en pas slaap en energie aan</p></header>
+      <div class="paneel app" aria-live="polite"><div class="dagtabs" id="dagtabs" role="group" aria-label="Kies een dag"></div><div id="score"></div></div>
+      <div class="paneel rechts app"><div class="app-kop"><b>Hoe je erbij zit</b><span class="voorbeeld">Voorbeeld</span></div><div id="regelaars"></div></div>
+    </div>
+  </section>
+  <section class="hoofdstuk" id="dagplan" data-scene="veluwe" data-tijd="10:30" data-plek="Dagplan" aria-labelledby="kop-dagplan">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop"><p class="tijdregel"><b>10:30</b> dagplan</p><h2 id="kop-dagplan">Je dag, blok voor blok.</h2><p class="plekregel" id="plan-info"></p></header>
+      <div class="paneel rechts app"><div class="app-kop"><b id="plan-titel">Dagplan</b><span class="voorbeeld">Voorbeeld</span></div><div id="plan"></div></div>
+    </div>
+  </section>
+  <section class="hoofdstuk" id="liever" data-scene="fjord" data-tijd="14:20" data-plek="Liever niet" aria-labelledby="kop-liever">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop"><p class="tijdregel"><b>14:20</b> middag</p><h2 id="kop-liever">Wat je vandaag beter níét doet.</h2><p class="plekregel">Een goed plan weet ook wat eruit moet</p></header>
+      <div class="paneel app"><div class="app-kop"><b>Liever niet vandaag</b><span class="voorbeeld">Voorbeeld</span></div><div id="liever-lijst"></div></div>
+    </div>
+  </section>
+  <section class="hoofdstuk" id="botsing" data-scene="seceda" data-tijd="18:30" data-plek="Botsingen" aria-labelledby="kop-botsing">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop"><p class="tijdregel"><b>18:30</b> avond</p><h2 id="kop-botsing">Mensen staan niet onderaan je lijst.</h2><p class="plekregel">Twee afspraken die botsen krijgen een voorstel</p></header>
+      <div class="paneel rechts app"><div class="app-kop"><b>Botsingen</b><span class="voorbeeld">Voorbeeld</span></div><div id="botsingen"></div></div>
+    </div>
+  </section>
+  <section class="hoofdstuk" id="rust" data-scene="vestrahorn" data-tijd="22:00" data-plek="Afsluiting" aria-labelledby="kop-rust">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop"><p class="tijdregel"><b>22:00</b> nacht</p><h2 id="kop-rust">Morgen start rustig.</h2><p class="plekregel">Rust telt ook mee</p></header>
+      <div class="paneel rechts app"><div class="app-kop"><b>Kijk vooruit</b><span class="voorbeeld">Voorbeeld</span></div><div id="afsluiting"></div></div>
+    </div>
+  </section>
+  <section class="colofon" aria-label="Over dit prototype"><div class="colofon-binnen">
+    <div><h2>Een prototype met de echte regels.</h2><p class="inleiding">Alles op deze pagina wordt berekend door de planlogica van LIFE (<code>src/planner</code>). De gegevens zijn verzonnen voorbeelden en er wordt niets opgeslagen. Alle suggesties komen uit vaste regels en niet uit een AI-model, zodat je altijd kunt nalezen waarom.</p></div>
+    <p class="voet"><span>LIFE · prototype · oktober 2026</span><span>Er wordt niets opgeslagen of verstuurd.</span></p>
+  </div></section>
 </main>
+<script src="/landschap.js"></script>
 <script type="module" src="/vandaag.js"></script>
 </body>
 </html>
