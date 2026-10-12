@@ -121,3 +121,10 @@ test('week: balans in minuten, achter onder 80% van het doel', () => {
   assert.equal(weekBalans([{ datum: 'x', blokken: [b('s', '10:00', '11:00', { soort: 'sport' })] }], { sport: 75 })[0].status, 'op koers');
   assert.equal(weekBalans([{ datum: 'x', blokken: [b('s', '10:00', '11:00', { soort: 'sport' })] }], { sport: 76 })[0].status, 'achter');
 });
+
+test('liever niet: een verplaatsing noemt de dag waar het heen gaat', () => {
+  const r = lieverNiet(dinsdag.blokken, profiel, { dagen: week, datum: dinsdag.datum });
+  const verplaats = r.suggesties.find(s => s.soort === 'verplaatsen');
+  assert.equal(verplaats.naarDatum, '2026-10-14');
+  assert.match(verplaats.alternatief, /woensdag/);
+});

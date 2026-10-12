@@ -4,17 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Week · LIFE</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
 <link rel="stylesheet" href="/landschap.css">
 </head>
 <body>
 <header class="balk">
   <div class="pil merk">
     <span class="woordmerk">LIFE</span>
-    <span class="chip">Prototype</span>
-  <nav aria-label="Hoofdmenu"><a href="/vandaag.html">Vandaag</a><a href="/week.html" aria-current="page">Week</a></nav>
+    
+  <nav aria-label="Hoofdmenu"><a href="/vandaag.html">Vandaag</a><a href="/week.html" aria-current="page">Week</a><a href="/invullen.html">Invullen</a></nav>
   </div>
   <div class="pil dag">
     <span class="klok" id="klok" aria-label="Tijd van de dag in dit verhaal">05:40</span>
@@ -23,6 +20,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.5"/></svg>
       <span class="knop-tekst">Eigen foto</span>
     </button>
+    <button class="knop" id="uitloggen" type="button" style="background:transparent;color:var(--fg)">Uitloggen</button>
     <input type="file" id="foto-invoer" accept="image/*" hidden>
   </div>
 </header>
@@ -35,7 +33,7 @@
       <h1 class="laag laag-titel" data-snelheid="0.12" data-voor="2">LIFE<span class="sr-only">: je week</span></h1>
     </figure>
     <div class="verhaal"><div class="intro"><div class="kop">
-      <p class="tijdregel"><b>12 tot en met 18 oktober</b></p>
+      <p class="tijdregel"><b id="ondertitel">Deze week</b></p>
       <p class="lede">Waar je week naartoe gaat, en op welke dagen het wringt.</p>
       <p class="scroll-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg>Scroll door je week</p>
     </div></div></div>
@@ -44,14 +42,14 @@
     <figure class="podium"></figure>
     <div class="verhaal">
       <header class="kop"><p class="tijdregel"><b>10:30</b> overzicht</p><h2 id="kop-balans">Alles op één kaart.</h2><p class="plekregel">Werk, sport, gezin, vrienden, school en vrije tijd</p></header>
-      <div class="paneel rechts app"><div class="app-kop"><b>Gepland tegenover wat je wilde</b><span class="voorbeeld">Voorbeeld</span></div><ul class="balans" id="balans-lijst"></ul><p class="app-noot" id="balans-noot"></p></div>
+      <div class="paneel rechts app"><div class="app-kop"><b>Gepland tegenover wat je wilde</b></div><ul class="balans" id="balans-lijst"></ul><p class="app-noot" id="balans-noot"></p></div>
     </div>
   </section>
   <section class="hoofdstuk" id="dagen" data-scene="fjord" data-tijd="14:20" data-plek="Per dag" aria-labelledby="kop-dagen">
     <figure class="podium"></figure>
     <div class="verhaal">
       <header class="kop"><p class="tijdregel"><b>14:20</b> per dag</p><h2 id="kop-dagen">Waar het wringt.</h2><p class="plekregel">De haalbaarheid van elke dag</p></header>
-      <div class="paneel app"><div class="app-kop"><b>Haalbaarheid per dag</b><span class="voorbeeld">Voorbeeld</span></div><ul class="lijstje" id="weekdagen"></ul></div>
+      <div class="paneel app"><div class="app-kop"><b>Haalbaarheid per dag</b></div><ul class="lijstje" id="weekdagen"></ul></div>
     </div>
   </section>
 </main>

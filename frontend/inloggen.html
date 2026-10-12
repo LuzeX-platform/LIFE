@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inloggen · LIFE</title>
+<link rel="stylesheet" href="/landschap.css">
+</head>
+<body class="enkel">
+<header class="balk">
+  <div class="pil merk">
+    <span class="woordmerk">LIFE</span>
+    
+  </div>
+  <div class="pil dag">
+    <span class="klok" id="klok" aria-label="Tijd van de dag in dit verhaal">05:40</span>
+    <span class="plek" id="plek">Blauw uur</span>
+    <button class="knop" id="foto-knop" type="button" aria-label="Eigen foto plaatsen in het hoofdstuk dat je nu ziet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.5"/></svg>
+      <span class="knop-tekst">Eigen foto</span>
+    </button>
+    <input type="file" id="foto-invoer" accept="image/*" hidden>
+  </div>
+</header>
+<p class="melding" id="melding" role="status" hidden></p>
+
+
+<main>
+  <section class="hoofdstuk held" data-scene="held" data-tijd="05:40" data-plek="Blauw uur" aria-label="Inloggen">
+    <figure class="podium">
+      <h1 class="laag laag-titel" data-snelheid="0.12" data-voor="2">LIFE<span class="sr-only">: inloggen</span></h1>
+    </figure>
+    <div class="verhaal"><div class="intro"><div class="paneel inlog">
+      <h1 id="titel-form">Inloggen</h1>
+      <form class="form" id="formulier" novalidate>
+        <label for="email">E-mailadres<input id="email" name="email" type="email" autocomplete="email" required></label>
+        <label for="wachtwoord">Wachtwoord<input id="wachtwoord" name="wachtwoord" type="password" autocomplete="current-password" required></label>
+        <div id="registratie-velden" hidden>
+          <p class="hulp">Minstens 12 tekens. Een zin werkt goed.</p>
+          <div class="vinkjes" style="margin-top:10px"><label><input type="checkbox" id="toestemming"><span>Ik geef toestemming om mijn slaap en energie te bewaren. Dat zijn gezondheidsgegevens. Je kunt dit later intrekken, dan worden ze gewist. Zonder toestemming werkt LIFE nog steeds, maar bewaart het geen slaap en energie.</span></label></div>
+        </div>
+        <p class="melding-in" id="form-melding" role="alert"></p>
+        <button class="knopje knopje--vol" id="knop" type="submit">Inloggen</button>
+      </form>
+      <button class="wissel" id="wissel" type="button"></button>
+      <p class="terug">Je gegevens staan op servers in Frankfurt. We sturen niets naar derden.</p>
+    </div></div></div>
+  </section>
+</main>
+<script src="/landschap.js"></script>
+<script type="module" src="/inloggen.js"></script>
+</body>
+</html>

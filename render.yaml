@@ -1,0 +1,41 @@
+# Render Blueprint: maakt in één keer de app en de database aan.
+# Gebruik: render.com -> "New +" -> "Blueprint" -> wijs naar deze repository -> "Apply".
+#
+# Regio Frankfurt (de enige EU-regio van Render): LIFE bewaart gezondheidsgegevens (slaap, energie)
+# en die moeten in de EU blijven (AVG). Zie CLAUDE.md.
+#
+# Geen gratis plan: dat zet de service in slaap na inactiviteit, en een dagplan dat 's ochtends
+# een halve minuut moet opstarten is geen dagplan.
+
+services:
+  - name: luzex-life
+    type: web
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Render controleert dit pad; faalt het (de database antwoordt niet), dan krijgt de nieuwe
+    # versie geen verkeer en blijft de vorige live.
+    healthCheckPath: /api/gezondheid
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: luzex-life-db
+          property: connectionString
+      # Ondertekent de sessiecookies. Render genereert hem; hij staat nergens in git.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SESSION_COOKIE_NAME
+        value: life_sessie
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+
+databases:
+  - name: luzex-life-db
+    plan: basic-256mb
+    region: frankfurt
+    postgresMajorVersion: "16"
+    diskSizeGB: 1

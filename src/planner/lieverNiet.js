@@ -63,7 +63,7 @@ export function lieverNiet(blokken, profiel, week = {}) {
       continue;
     }
     suggesties.push({
-      blokId: b.id, soort: wanneer ? 'verplaatsen' : 'laten liggen', titel: b.titel,
+      blokId: b.id, soort: wanneer ? 'verplaatsen' : 'laten liggen', titel: b.titel, naarDatum: ruimteOp ? ruimteOp.datum : null,
       reden: `Je dag is voor ${vullingNu}% gevuld.`,
       alternatief: wanneer ? `Zet het op ${wanneer}, daar is ruimte.` : 'Laat het vandaag liggen.',
       vervanging: null,
