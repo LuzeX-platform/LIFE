@@ -15,6 +15,11 @@ rekent, en alles om op Render te draaien. Nog niet live; zie "Uitrollen".
   begrenzing op pogingen, controle op de herkomst van schrijvende verzoeken.
 - **Invullen:** je profiel (wakkere uren, slaapdoel, weekdoelen), je agenda en een check-in
   (slaap en energie). Slaap en energie worden alleen bewaard met je uitdrukkelijke toestemming.
+- **Agenda inladen:** een `.ics`-bestand van Apple Agenda, Google Agenda of Outlook. Het bestand wordt in
+  de browser gelezen (`src/planner/agendaImport.js`); alleen titel, tijd en plek van de afspraken die
+  je bevestigt gaan naar de server, nooit de deelnemers. Ingeladen afspraken staan vast. Opnieuw
+  inladen geeft geen dubbele afspraken. Terugkerende afspraken, tijdzones en zomertijd worden
+  ondersteund; zie de opmerking bovenaan het bestand voor wat niet kan.
 - **Dashboard:** Vandaag en Week, in de landschapstocht, berekend met de planlogica.
 - **Je gegevens:** toestemming intrekken (wist de check-ins), alles downloaden, account verwijderen.
 
@@ -55,6 +60,11 @@ vorige versie live. De gezondheidscontrole `/api/gezondheid` controleert ook de 
 ## Wat nog ontbreekt voor echte gebruikers
 
 Dit zijn bekende gaten, geen vergeten dingen:
+
+- **Agenda inladen is een momentopname.** Wijzigt een afspraak in je eigen agenda, dan neemt LIFE
+  dat bij opnieuw inladen niet over: de oude blijft staan en de gewijzigde komt erbij. Haal de oude
+  weg en laad opnieuw. Een agenda-link die LIFE zelf bijhoudt, en een koppeling met Google, zijn
+  een volgende stap.
 
 - **Wachtwoord vergeten en e-mailbevestiging.** Daarvoor is een mailserver nodig (SMTP, zoals bij
   ACCRD). Zonder dat kan niemand een vergeten wachtwoord herstellen.

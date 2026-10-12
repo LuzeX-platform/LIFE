@@ -1,5 +1,6 @@
 import { api, esc, foutTekst, klokNaarMin, koppelUitloggen, leesDuur, maandagVan, plusDagen, toonDuur, vandaag, weekVan } from '/api.js';
 import { klok, duur, opTijd } from '/planner/index.js';
+import { leesIcs, raadSoort } from '/planner/agendaImport.js';
 
 koppelUitloggen();
 const el = id => document.getElementById(id);
@@ -70,6 +71,73 @@ el('blok-form').addEventListener('submit', async e => {
     weekStart = maandagVan(el('datum').value); await laadWeek();
   } catch (f) { meld('blok-melding', foutTekst(f)); }
 });
+
+// ── Agenda inladen ──
+// Het bestand wordt hier gelezen en nooit als geheel verstuurd. Alleen titel, tijd, plek en een
+// sleutel (om dubbel inladen te herkennen) van de afspraken die de gebruiker bevestigt gaan mee.
+let icsTekst = null, gevonden = [];
+el('import-van').value = weekStart; el('import-tot').value = plusDagen(weekStart, 55);
+const MAX_DAGEN = 120;
+function lees() {
+  if (icsTekst === null) return;
+  const van = el('import-van').value, tot = el('import-tot').value;
+  if (!van || !tot || tot < van) return meld('import-melding', 'Kies een periode waarvan het einde na het begin ligt.');
+  if ((Date.parse(`${tot}T12:00:00Z`) - Date.parse(`${van}T12:00:00Z`)) / 86400000 > MAX_DAGEN) return meld('import-melding', `Kies een periode van hoogstens ${MAX_DAGEN} dagen.`);
+  const r = leesIcs(icsTekst, { van, tot });
+  gevonden = r.afspraken.map(a => ({ ...a, soort: raadSoort(a.titel), aan: true }));
+  meld('import-melding', '');
+  el('import-resultaat').hidden = false;
+  const deel = [];
+  if (r.overgeslagen.heleDag) deel.push(`${r.overgeslagen.heleDag} hele-dag-afspraken`);
+  if (r.overgeslagen.geannuleerd) deel.push(`${r.overgeslagen.geannuleerd} geannuleerde`);
+  el('import-samenvatting').textContent = gevonden.length
+    ? `${gevonden.length} afspraken gevonden${deel.length ? `. Overgeslagen: ${deel.join(', ')}` : ''}.${r.opmerkingen.length ? ` ${r.opmerkingen.join(' ')}` : ''}`
+    : `Geen afspraken gevonden in deze periode.${deel.length ? ` Overgeslagen: ${deel.join(', ')}.` : ''}`;
+  el('import-lijst').innerHTML = gevonden.map((a, i) => `<div class="import-rij"><label class="import-aan"><input type="checkbox" data-i="${i}" checked aria-label="${esc(a.titel)} meenemen"></label>
+    <span class="import-tijd">${esc(a.datum.slice(8))}-${esc(a.datum.slice(5, 7))} ${klok(a.start)}</span><span class="import-titel">${esc(a.titel)}${a.deelnemers ? '<small>met iemand</small>' : ''}</span>
+    <select data-soort="${i}" aria-label="Soort van ${esc(a.titel)}">${SOORTEN.map(s => `<option value="${s}"${s === a.soort ? ' selected' : ''}>${esc(naam(s))}</option>`).join('')}</select></div>`).join('');
+  tekenImportKnop();
+}
+function tekenImportKnop() {
+  const n = gevonden.filter(a => a.aan).length;
+  el('import-knop').textContent = n === 1 ? 'Voeg 1 afspraak toe' : `Voeg ${n} afspraken toe`;
+  el('import-knop').disabled = n === 0;
+}
+el('import-bestand').addEventListener('change', async () => {
+  const f = el('import-bestand').files[0];
+  if (!f) return;
+  if (f.size > 5 * 1024 * 1024) return meld('import-melding', 'Dit bestand is te groot (meer dan 5 MB). Exporteer een kortere periode.');
+  icsTekst = await f.text();
+  if (!/BEGIN:VCALENDAR/i.test(icsTekst)) { icsTekst = null; return meld('import-melding', 'Dit lijkt geen agendabestand (.ics).'); }
+  lees();
+});
+el('import-van').addEventListener('change', lees); el('import-tot').addEventListener('change', lees);
+el('import-lijst').addEventListener('change', e => {
+  const i = e.target.dataset.i ?? e.target.dataset.soort; if (i === undefined) return;
+  if (e.target.dataset.i !== undefined) gevonden[i].aan = e.target.checked; else gevonden[i].soort = e.target.value;
+  tekenImportKnop();
+});
+el('import-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const keuze = gevonden.filter(a => a.aan);
+  if (!keuze.length) return;
+  el('import-knop').disabled = true;
+  try {
+    let nieuw = 0, over = 0;
+    for (let i = 0; i < keuze.length; i += 400) {
+      const r = await api('POST', '/api/blokken/importeren', { afspraken: keuze.slice(i, i + 400).map(a => ({ datum: a.datum, titel: a.titel, soort: a.soort, start: a.start, einde: a.einde, vast: true, persoon: a.deelnemers > 0, plek: a.plek, sleutel: a.sleutel })) });
+      nieuw += r.nieuw; over += r.overgeslagen;
+    }
+    meld('import-melding', `${nieuw} afspraken toegevoegd${over ? `, ${over} stonden er al` : ''}. Kijk bij Vandaag wat het met je dagen doet.`, true);
+    el('import-resultaat').hidden = true; el('import-bestand').value = ''; icsTekst = null; gevonden = [];
+    weekStart = maandagVan(keuze[0].datum); await laadWeek();
+  } catch (f) { meld('import-melding', foutTekst(f)); el('import-knop').disabled = false; }
+});
+// Alleen aanwezig in het voorbeeld, om zonder eigen bestand te kunnen proberen.
+if (window.__icsVoorbeeld) {
+  el('import-voorbeeld').hidden = false; el('import-resultaat').hidden = false;
+  el('import-voorbeeld').addEventListener('click', () => { icsTekst = window.__icsVoorbeeld(); lees(); });
+}
 
 // ── Vanochtend ──
 async function laadCheckin() {

@@ -148,3 +148,45 @@ test("inloggen is begrensd tot 10 pogingen per minuut", opts, async () => {
   for (let i = 0; i < 12; i++) laatste = (await app.inject({ method: "POST", url: "/api/auth/inloggen", remoteAddress: "10.9.9.9", payload: { email: "geen@voorbeeld.nl", wachtwoord: "x" } })).statusCode;
   assert.equal(laatste, 429);
 });
+
+// Elke importaanroep krijgt een eigen IP: de route is begrensd tot 10 per minuut per adres.
+let impIp = 0;
+const imp = (cookie: string, payload: unknown) => app.inject({ method: "POST", url: "/api/blokken/importeren", payload: payload as any, headers: { cookie }, remoteAddress: `10.2.0.${++impIp}` });
+const afspraak = (sleutel: string, extra: object = {}) => ({ datum: "2026-10-13", titel: "Overleg", soort: "werk", start: 540, einde: 600, vast: true, persoon: true, plek: "Kantoor", sleutel, ...extra });
+
+test("importeren: nieuwe afspraken komen erin, een tweede keer geeft geen dubbele", opts, async () => {
+  const c = await maakGebruiker("import@voorbeeld.nl");
+  const eerste = await imp(c, { afspraken: [afspraak("a|1"), afspraak("a|2", { titel: "Tandarts", soort: "overig", persoon: false })] });
+  assert.equal(eerste.statusCode, 201); assert.deepEqual(eerste.json(), { nieuw: 2, overgeslagen: 0 });
+  const tweede = await imp(c, { afspraken: [afspraak("a|1"), afspraak("a|3")] });
+  assert.deepEqual(tweede.json(), { nieuw: 1, overgeslagen: 1 });
+  const lijst = (await api(c, "GET", "/api/blokken?van=2026-10-12&tot=2026-10-18")).json();
+  assert.equal(lijst.length, 3); assert.ok(lijst.every((b: any) => b.vast === true || b.titel === "Tandarts"));
+});
+
+test("importeren: een blok dat je weghaalde komt niet terug", opts, async () => {
+  const c = await maakGebruiker("import-weg@voorbeeld.nl");
+  await imp(c, { afspraken: [afspraak("w|1")] });
+  const id = (await api(c, "GET", "/api/blokken?van=2026-10-12&tot=2026-10-18")).json()[0].id;
+  await api(c, "PATCH", `/api/blokken/${id}`, { status: "geschrapt" });
+  const opnieuw = await imp(c, { afspraken: [afspraak("w|1")] });
+  assert.equal(opnieuw.json().nieuw, 0);
+  assert.equal((await api(c, "GET", "/api/blokken?van=2026-10-12&tot=2026-10-18")).json().length, 0);
+});
+
+test("importeren: dezelfde sleutel bij twee gebruikers is geen conflict, en ze zien elkaars afspraken niet", opts, async () => {
+  const a = await maakGebruiker("imp-a@voorbeeld.nl"), b = await maakGebruiker("imp-b@voorbeeld.nl");
+  assert.equal((await imp(a, { afspraken: [afspraak("gedeeld|1")] })).json().nieuw, 1);
+  assert.equal((await imp(b, { afspraken: [afspraak("gedeeld|1")] })).json().nieuw, 1);
+  assert.equal((await api(b, "GET", "/api/blokken?van=2026-10-12&tot=2026-10-18")).json().length, 1);
+});
+
+test("importeren: ongeldige invoer, lege lijst, te veel en geen sessie", opts, async () => {
+  const c = await maakGebruiker("imp-fout@voorbeeld.nl");
+  assert.equal((await imp(c, { afspraken: [] })).statusCode, 400);
+  assert.equal((await imp(c, { afspraken: [afspraak("x", { einde: 500 })] })).statusCode, 400, "einde voor start");
+  assert.equal((await imp(c, { afspraken: [afspraak("x", { soort: "onzin" })] })).statusCode, 400);
+  assert.equal((await imp(c, { afspraken: [afspraak("x", { gebruikerId: "iemand-anders" })] })).statusCode, 201, "onbekende velden worden genegeerd, nooit gebruikt");
+  assert.equal((await imp(c, { afspraken: Array.from({ length: 501 }, (_, i) => afspraak(`m${i}`)) })).statusCode, 400);
+  assert.equal((await app.inject({ method: "POST", url: "/api/blokken/importeren", payload: { afspraken: [afspraak("z")] } })).statusCode, 401);
+});

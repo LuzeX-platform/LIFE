@@ -47,3 +47,14 @@ export const registratie = z.object({
   toestemmingGezondheid: z.boolean().default(false),
 });
 export const inlog = z.object({ email: z.string().trim().toLowerCase().max(200), wachtwoord: z.string().max(200) });
+
+// Eén afspraak uit een ingeladen agendabestand. De browser leest het bestand en stuurt alleen dit
+// door (titel, tijd, plek), nooit de deelnemers of de rest van het bestand.
+export const importAfspraak = z.object({
+  datum, titel: z.string().trim().min(1).max(120), soort: z.enum(SOORTEN),
+  start: minuut, einde: minuut,
+  vast: z.boolean(), persoon: z.boolean(),
+  plek: z.string().trim().max(60).nullable().optional(),
+  sleutel: z.string().min(1).max(200),
+}).refine(b => b.einde > b.start, { message: "Het einde moet na de start liggen", path: ["einde"] });
+export const importLijst = z.object({ afspraken: z.array(importAfspraak).min(1).max(500) });

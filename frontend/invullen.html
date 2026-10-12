@@ -53,6 +53,21 @@
     <figure class="podium"></figure>
     <div class="verhaal">
       <header class="kop"><p class="tijdregel"><b>10:30</b> agenda</p><h2 id="kop-agenda">Wat staat er in je week?</h2><p class="plekregel">Voeg blokken toe, LIFE rekent met wat je invult</p></header>
+      <div class="paneel app" id="import-paneel"><div class="app-kop"><b>Agenda inladen</b></div>
+        <p class="hulp">Kies een agendabestand (.ics). Het wordt in je browser gelezen: alleen de afspraken die je hieronder bevestigt gaan naar LIFE, zonder deelnemers.</p>
+        <details class="hulp-uitleg"><summary>Hoe krijg ik zo'n bestand?</summary>
+          <p class="hulp"><b>Google Agenda:</b> instellingen, Importeren en exporteren, Exporteren. Je krijgt een zipbestand; pak dat uit.<br><b>Apple Agenda:</b> Bestand, Exporteer, Exporteer. Of kies een agenda en Bestand, Exporteer.<br><b>Outlook:</b> Bestand, Agenda opslaan, kies .ics.</p></details>
+        <form class="form" id="import-form" novalidate>
+          <label for="import-bestand">Bestand<input id="import-bestand" type="file" accept=".ics,text/calendar"></label>
+          <div class="rij"><label for="import-van">Vanaf<input id="import-van" type="date"></label><label for="import-tot">Tot en met<input id="import-tot" type="date"></label></div>
+          <p class="melding-in" id="import-melding" role="status"></p>
+          <div id="import-resultaat" hidden>
+            <p class="hulp" id="import-samenvatting"></p>
+            <div class="import-lijst" id="import-lijst"></div>
+            <p class="hulp">De soort is een gok op de naam; pas hem aan waar hij niet klopt. Ingeladen afspraken staan vast, dus LIFE verschuift of schrapt ze nooit. Afspraken met deelnemers staan erbij als “met iemand”.</p>
+            <div class="knoppen"><button class="knopje knopje--vol" id="import-knop" type="submit">Voeg toe</button><button class="knopje" id="import-voorbeeld" type="button" hidden>Probeer met een voorbeeldbestand</button></div>
+          </div>
+        </form></div>
       <div class="paneel app"><div class="app-kop"><b>Blok toevoegen</b></div>
       <form class="form" id="blok-form" novalidate>
         <label for="titel">Naam<input id="titel" type="text" maxlength="120" placeholder="Bijvoorbeeld: hardlopen" required></label>

@@ -58,6 +58,11 @@ model Blok {
   reisNa       Int?
   lichterTitel String?
   lichterDuur  Int?
+  // Waar het blok vandaan komt: leeg = zelf ingevuld, "ics" = ingeladen uit een agendabestand.
+  // De sleutel (uid + moment) laat een tweede keer inladen dezelfde afspraken herkennen. Een blok dat
+  // je zelf hebt weggehaald blijft bestaan (status geschrapt) en komt daardoor niet terug.
+  bron           String?
+  externeSleutel String?
   // gepland | gedaan | geschrapt | doorgeschoven
   status       String   @default("gepland")
   aangemaaktOp DateTime @default(now())
@@ -66,6 +71,7 @@ model Blok {
   gebruiker Gebruiker @relation(fields: [gebruikerId], references: [id], onDelete: Cascade)
 
   @@index([gebruikerId, datum])
+  @@unique([gebruikerId, externeSleutel])
 }
 
 // Slaap en energie voor één dag: "hoe sliep je afgelopen nacht, hoe zit je erbij".

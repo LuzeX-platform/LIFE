@@ -490,3 +490,17 @@ a.knopje { display: inline-flex; align-items: center; }
 .enkel .intro { justify-content: flex-end; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5svh); }
 .enkel .laag-titel { inset: auto 0 56% 0; }
 @media (max-aspect-ratio: 1/1) { .enkel .laag-titel { inset: auto 0 64% 0; } }
+
+.import-lijst { max-height: 18rem; overflow: auto; border: 1px solid var(--lijn); border-radius: 12px; margin: 10px 0; }
+.import-rij { display: grid; grid-template-columns: auto 6.6rem minmax(0, 1fr) 8rem; gap: 10px; align-items: center; padding: 8px 10px; border-top: 1px solid var(--lijn); font-size: 0.92rem; }
+.import-rij:first-child { border-top: 0; }
+.import-aan input { width: 18px; height: 18px; accent-color: var(--fg); }
+.import-tijd { font: 500 0.78rem/1.3 var(--font-data); color: var(--fg-zacht); white-space: nowrap; }
+.import-titel small { display: block; color: var(--fg-zacht); font-size: 0.78rem; }
+.import-rij select { min-height: 34px; width: 100%; padding: 0 8px; font: inherit; font-size: 0.85rem; color: var(--fg); background: transparent; border: 1px solid var(--lijn); border-radius: 10px; }
+.hulp-uitleg { margin-bottom: 12px; } .hulp-uitleg summary { cursor: pointer; font: 600 0.85rem var(--font-body); }
+@media (max-width: 640px) { .import-rij { grid-template-columns: auto minmax(0, 1fr); } .import-tijd { grid-column: 2; } .import-rij select { grid-column: 2; } }
+
+/* Het hidden-attribuut moet altijd winnen, ook van klassen die display zetten (zoals .knopje).
+   De artifact-omgeving doet dit zelf; de echte server niet. */
+[hidden] { display: none !important; }

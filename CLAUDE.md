@@ -62,3 +62,6 @@ hóe iets moet, kijk hoe ACCRD het doet. Wijk je af, schrijf op die plek waaróm
   `onDelete: Cascade`). Daarbuiten krijgt een blok de status `geschrapt` en blijft het bestaan.
 - Schrijf een nieuwe route altijd met een test die bewijst dat een ander account erbij kan noch
   eraan kan.
+- **Een agendabestand verlaat de browser niet als geheel.** Het bevat gegevens van anderen
+  (deelnemers). `agendaImport.js` leest het lokaal; de server krijgt alleen de bevestigde afspraken
+  (titel, tijd, plek, sleutel). Lees of bewaar deelnemers nooit.

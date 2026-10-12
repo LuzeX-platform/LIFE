@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { Blok } from "@prisma/client";
 import { db } from "../db.js";
 import { vereisInlog } from "../vereisInlog.js";
-import { datum, nieuwBlok, wijzigBlok } from "../schemas.js";
+import { datum, importLijst, nieuwBlok, wijzigBlok } from "../schemas.js";
 
 // De vorm die de planlogica verwacht (src/planner/typen.js), plus id, datum en status.
 export const naarApi = (b: Blok) => ({
@@ -37,6 +37,23 @@ export async function blokRoutes(app: FastifyInstance) {
       data: { ...rest, gebruikerId: request.gebruiker!.gebruikerId, plek: plek ?? null, reisNa: reisNa ?? null, lichterTitel: lichter?.titel ?? null, lichterDuur: lichter?.duur ?? null },
     });
     return reply.code(201).send(naarApi(b));
+  });
+
+  // Afspraken uit een agendabestand. Zelfde afspraak twee keer inladen geeft geen dubbele blokken
+  // (unieke sleutel per gebruiker), en een blok dat je zelf weghaalde komt niet terug omdat het
+  // met status "geschrapt" blijft bestaan.
+  app.post("/api/blokken/importeren", { preHandler: vereisInlog, config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (request, reply) => {
+    const p = importLijst.safeParse(request.body);
+    if (!p.success) return reply.code(400).send({ errorCode: "ONGELDIGE_INVOER", fouten: p.error.flatten() });
+    const gebruikerId = request.gebruiker!.gebruikerId;
+    const r = await db.blok.createMany({
+      skipDuplicates: true,
+      data: p.data.afspraken.map(a => ({
+        gebruikerId, datum: a.datum, titel: a.titel, soort: a.soort, start: a.start, einde: a.einde,
+        vast: a.vast, persoon: a.persoon, plek: a.plek ?? null, bron: "ics", externeSleutel: a.sleutel,
+      })),
+    });
+    return reply.code(201).send({ nieuw: r.count, overgeslagen: p.data.afspraken.length - r.count });
   });
 
   // Wijzigen, afvinken, verschuiven, naar een andere dag zetten en "verwijderen" (status
