@@ -1,0 +1,83 @@
+// Gegevens van LIFE. Alles wat de gebruiker invult hoort bij precies één Gebruiker.
+//
+// Slaap en energie (Checkin) zijn gezondheidsgegevens: bijzondere persoonsgegevens onder de AVG.
+// Daarom bewaren we de datum waarop de gebruiker daar uitdrukkelijk toestemming voor gaf
+// (Gebruiker.toestemmingGezondheid) en zonder die toestemming accepteert de server geen check-in.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Gebruiker {
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  wachtwoordHash         String
+  toestemmingGezondheid  DateTime?
+  aangemaaktOp           DateTime  @default(now())
+
+  profiel   Profiel?
+  blokken   Blok[]
+  checkins  Checkin[]
+}
+
+// Eén rij per gebruiker. Tijden in minuten sinds middernacht, doelen in minuten per week.
+model Profiel {
+  gebruikerId String @id
+  wakkerVan   Int    @default(390)   // 06:30
+  wakkerTot   Int    @default(1350)  // 22:30
+  slaapDoel   Int    @default(450)   // 7 u 30
+  // { "sport": 360, "vrienden": 240, ... } in minuten per week. Json en geen kolom per soort,
+  // zodat een nieuwe soort geen migratie kost.
+  weekDoelen  Json   @default("{}")
+  gewijzigdOp DateTime @updatedAt
+
+  gebruiker Gebruiker @relation(fields: [gebruikerId], references: [id], onDelete: Cascade)
+}
+
+// Een blok in de agenda. Wordt nooit verwijderd: een geschrapt blok krijgt status "geschrapt" en
+// blijft staan (zie de regel over immutability in de hub). Uitzondering: het verwijderen van het
+// hele account (AVG, recht op vergetelheid) haalt alles weg via onDelete: Cascade.
+model Blok {
+  id           String   @id @default(uuid())
+  gebruikerId  String
+  datum        String   // "2026-10-13"; een tekst, zodat er geen tijdzone tussen komt
+  titel        String
+  soort        String   // werk | school | gezin | sport | vrienden | vrije-tijd | reis | overig
+  start        Int      // minuten sinds middernacht
+  einde        Int
+  vast         Boolean  @default(false)
+  persoon      Boolean  @default(false)
+  uitstelbaar  Boolean  @default(false)
+  zwaar        Boolean  @default(false)
+  plek         String?
+  reisNa       Int?
+  lichterTitel String?
+  lichterDuur  Int?
+  // gepland | gedaan | geschrapt | doorgeschoven
+  status       String   @default("gepland")
+  aangemaaktOp DateTime @default(now())
+  gewijzigdOp  DateTime @updatedAt
+
+  gebruiker Gebruiker @relation(fields: [gebruikerId], references: [id], onDelete: Cascade)
+
+  @@index([gebruikerId, datum])
+}
+
+// Slaap en energie voor één dag: "hoe sliep je afgelopen nacht, hoe zit je erbij".
+model Checkin {
+  id            String   @id @default(uuid())
+  gebruikerId   String
+  datum         String
+  slaapMinuten  Int
+  energie       Int      // 1 tot 5
+  gewijzigdOp   DateTime @updatedAt
+
+  gebruiker Gebruiker @relation(fields: [gebruikerId], references: [id], onDelete: Cascade)
+
+  @@unique([gebruikerId, datum])
+}
