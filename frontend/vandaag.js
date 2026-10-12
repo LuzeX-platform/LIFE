@@ -1,5 +1,5 @@
 import { haalbaarheid, lieverNiet, pasToe, botsingen, weekBalans, klok, duur, weekdag } from '/planner/index.js';
-import { week as voorbeeldWeek, profiel as voorbeeldProfiel } from '/voorbeeld/week.js';
+import { week as voorbeeldWeek, profiel as voorbeeldProfiel, weekDoelen } from '/voorbeeld/week.js';
 
 // Toestand in het geheugen. Bewust niet in localStorage: het prototype werkt met voorbeeldgegevens
 // en moet bij herladen weer bij het uitgangspunt beginnen, anders is het niet te vergelijken.
@@ -8,7 +8,7 @@ const dagen = structuredClone(voorbeeldWeek);
 const profielen = Object.fromEntries(dagen.map(d => [d.datum, d.datum === VANDAAG
   ? { ...voorbeeldProfiel }
   : { ...voorbeeldProfiel, slaapGisteren: voorbeeldProfiel.slaapDoel, energie: 3 }]));
-const genegeerd = new Set(), doorgeschoven = {};
+const genegeerd = new Set(), gedaan = new Set(), doorgeschoven = {};
 let gekozen = VANDAAG;
 
 const el = id => document.getElementById(id);
@@ -64,8 +64,9 @@ function teken() {
   el('plan-info').textContent = `${lijst.length} blokken · ${duur(h.vrij)} vrij`;
   el('plan').innerHTML = `<ol class="plan">${lijst.map(b => {
     const v = vlag.get(b.id);
-    return `<li class="${b.soort === 'reis' ? 'reis' : ''} ${b.vast ? 'vast' : ''}"><time>${klok(b.start)}</time>
-      <div><span>${esc(b.titel)}</span><small>${duur(b.einde - b.start)}${b.vast ? ' · vast' : ''}</small>${v ? `<span class="vlag vlag--${v[0]}">${v[1]}</span>` : ''}</div><em>${esc(b.soort.replace('-', ' '))}</em></li>`;
+    const klaar = gedaan.has(b.id);
+    return `<li class="${b.soort === 'reis' ? 'reis' : ''} ${b.vast ? 'vast' : ''} ${klaar ? 'klaar' : ''}"><time>${klok(b.start)}</time>
+      <div><span class="titel">${b.soort === 'reis' ? '' : `<button class="vink" type="button" data-actie="gedaan" data-blok="${esc(b.id)}" aria-pressed="${klaar}" aria-label="${esc(b.titel)} afvinken"></button>`}${esc(b.titel)}</span><small>${duur(b.einde - b.start)}${b.vast ? ' · vast' : ''}</small>${v ? `<span class="vlag vlag--${v[0]}">${v[1]}</span>` : ''}</div><em>${esc(b.soort.replace('-', ' '))}</em></li>`;
   }).join('')}</ol>${(doorgeschoven[gekozen] || []).length ? `<p class="doorgeschoven">Doorgeschoven naar deze dag: ${doorgeschoven[gekozen].map(esc).join(', ')}. Nog zonder tijd.</p>` : ''}`;
 
   el('liever-lijst').innerHTML = l.suggesties.length || l.opmerkingen.length ? `
@@ -81,18 +82,39 @@ function teken() {
       : '<p class="alt">Beide staan vast. Kies zelf wat voorgaat.</p>'}</div>`).join('')
     : '<p class="app-noot">Geen botsingen op deze dag. Probeer vrijdag.</p>';
 
+  const telbaar = d.blokken.filter(b => b.soort !== 'reis'), klaarAantal = telbaar.filter(b => gedaan.has(b.id)).length;
   const morgen = dagen[dagen.findIndex(x => x.datum === gekozen) + 1];
   if (morgen) {
     const m = haalbaarheid(morgen.blokken, profielen[morgen.datum]);
-    el('afsluiting').innerHTML = `<dl class="feiten"><div><dt>Morgen</dt><dd>${weekdag(morgen.datum)}</dd></div><div><dt>Haalbaarheid</dt><dd class="${status(m.oordeel)}">${m.score} van 100</dd></div><div><dt>Naar bed</dt><dd>22:30</dd></div></dl>
+    el('afsluiting').innerHTML = `<dl class="feiten"><div><dt>Vandaag gedaan</dt><dd>${klaarAantal} van ${telbaar.length}</dd></div><div><dt>Doorgeschoven</dt><dd>${(doorgeschoven[morgen.datum] || []).length}</dd></div></dl>
+      <dl class="feiten"><div><dt>Morgen</dt><dd>${weekdag(morgen.datum)}</dd></div><div><dt>Haalbaarheid</dt><dd class="${status(m.oordeel)}">${m.score} van 100</dd></div><div><dt>Naar bed</dt><dd>22:30</dd></div></dl>
       <p class="app-noot">${m.oordeel === 'haalbaar' ? 'Morgen past. Slaap lekker.' : 'Morgen is een drukke dag. Met een uur extra slaap houd je hem haalbaar.'}</p>`;
-  } else el('afsluiting').innerHTML = '<p class="app-noot">Dit was de laatste dag van de week.</p>';
+  } else el('afsluiting').innerHTML = `<dl class="feiten"><div><dt>Vandaag gedaan</dt><dd>${klaarAantal} van ${telbaar.length}</dd></div></dl><p class="app-noot">Dit was de laatste dag van de week.</p>`;
+  tekenWeek();
+}
+
+// De weekhoofdstukken (alleen aanwezig als de pagina ze heeft) rekenen mee met wat je hierboven doet.
+function tekenWeek() {
+  if (!el('balans-lijst')) return;
+  const balans = weekBalans(dagen, weekDoelen), MAX = Math.max(...balans.flatMap(r => [r.gepland, r.doel]));
+  el('balans-lijst').innerHTML = balans.map(r => `<li class="week"><span class="naam">${esc(r.soort.replace('-', ' '))}</span>
+    <div class="staaf" role="img" aria-label="${esc(r.soort)}: ${duur(r.gepland)} van ${duur(r.doel)}"><b style="width:${Math.round(100 * r.gepland / MAX)}%"></b><i style="left:${Math.round(100 * r.doel / MAX)}%"></i></div>
+    <span class="getal ${r.status === 'achter' ? 'achter' : ''}">${duur(r.gepland)} / ${duur(r.doel)}</span></li>`).join('');
+  const achter = balans.filter(r => r.status === 'achter').map(r => r.soort.replace('-', ' '));
+  el('balans-noot').textContent = achter.length ? `Achter op je doel: ${achter.join(', ')}. Het streepje op de balk is het doel.` : 'Alles ligt op koers.';
+  el('weekdagen').innerHTML = dagen.map(x => {
+    const s = haalbaarheid(x.blokken, profielen[x.datum]);
+    return `<li><button class="weekdag-rij" type="button" data-ga-naar="${x.datum}"><span class="dagnaam">${weekdag(x.datum).slice(0, 2)} ${Number(x.datum.slice(8))}</span>
+      <span class="maat ${status(s.oordeel)}" style="margin:0"><b style="width:${s.score}%"></b></span><span class="getal ${status(s.oordeel)}">${s.score}</span></button></li>`;
+  }).join('');
 }
 
 document.addEventListener('click', e => {
   const knop = e.target.closest('button');
   if (!knop) return;
   if (knop.dataset.datum) { gekozen = knop.dataset.datum; return teken(); }
+  if (knop.dataset.gaNaar) { gekozen = knop.dataset.gaNaar; teken(); return el('overzicht').scrollIntoView({ behavior: 'smooth' }); }
+  if (knop.dataset.actie === 'gedaan') { const id = knop.dataset.blok; gedaan.has(id) ? gedaan.delete(id) : gedaan.add(id); return teken(); }
   const d = dag(), id = knop.dataset.blok;
   if (knop.dataset.actie === 'laat') { genegeerd.add(id); return teken(); }
   if (knop.dataset.actie === 'schuif') {
