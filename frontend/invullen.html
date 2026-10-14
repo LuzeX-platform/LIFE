@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Invullen · LIFE</title>
+<link rel="stylesheet" href="/landschap.css">
+</head>
+<body>
+<header class="balk">
+  <div class="pil merk">
+    <span class="woordmerk">LIFE</span>
+    
+  <nav aria-label="Hoofdmenu"><a href="/vandaag.html">Vandaag</a><a href="/week.html">Week</a><a href="/invullen.html" aria-current="page">Invullen</a></nav>
+  </div>
+  <div class="pil dag">
+    <span class="klok" id="klok" aria-label="Tijd van de dag in dit verhaal">05:40</span>
+    <span class="plek" id="plek">Blauw uur</span>
+    <button class="knop" id="foto-knop" type="button" aria-label="Eigen foto plaatsen in het hoofdstuk dat je nu ziet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.5"/></svg>
+      <span class="knop-tekst">Eigen foto</span>
+    </button>
+    <button class="knop" id="uitloggen" type="button" style="background:transparent;color:var(--fg)">Uitloggen</button>
+    <input type="file" id="foto-invoer" accept="image/*" hidden>
+  </div>
+</header>
+<p class="melding" id="melding" role="status" hidden></p>
+
+
+<main>
+  <section class="hoofdstuk held" data-scene="held" data-tijd="05:40" data-plek="Blauw uur" aria-label="Opening">
+    <figure class="podium"><h1 class="laag laag-titel" data-snelheid="0.12" data-voor="2">LIFE<span class="sr-only">: invullen</span></h1></figure>
+    <div class="verhaal"><div class="intro"><div class="kop">
+      <p class="tijdregel"><b id="mijn-email">Invullen</b></p>
+      <p class="lede">Hier vul je in wat LIFE nodig heeft: hoe jouw dag eruitziet, wat er in je agenda staat en hoe je erbij zit. Hoe meer je invult, hoe beter het dagplan past.</p>
+      <p class="scroll-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg>Scroll naar beneden</p>
+    </div></div></div>
+  </section>
+  <section class="hoofdstuk" id="jij" data-scene="wad" data-tijd="06:45" data-plek="Jij" aria-labelledby="kop-jij">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop"><p class="tijdregel"><b>06:45</b> jij</p><h2 id="kop-jij">Hoe ziet jouw dag eruit?</h2><p class="plekregel">Je wakkere uren, je slaapdoel en wat je per week wilt</p></header>
+      <div class="paneel app"><form class="form" id="profiel-form" novalidate>
+        <div class="rij"><label for="wakker-van">Wakker vanaf<input id="wakker-van" type="time" required></label><label for="wakker-tot">Wakker tot<input id="wakker-tot" type="time" required></label><label for="slaapdoel">Slaapdoel<input id="slaapdoel" type="text" inputmode="numeric" placeholder="7:30"></label></div>
+        <p class="hulp">Wat wil je per week doen? Laat leeg wat je niet bijhoudt. Schrijf het als uren:minuten.</p>
+        <div class="rij" id="weekdoelen"></div>
+        <p class="melding-in" id="profiel-melding" role="status"></p>
+        <div><button class="knopje knopje--vol" type="submit">Opslaan</button></div>
+      </form></div>
+    </div>
+  </section>
+  <section class="hoofdstuk" id="agenda" data-scene="veluwe" data-tijd="10:30" data-plek="Agenda" aria-labelledby="kop-agenda">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop"><p class="tijdregel"><b>10:30</b> agenda</p><h2 id="kop-agenda">Wat staat er in je week?</h2><p class="plekregel">Voeg blokken toe, LIFE rekent met wat je invult</p></header>
+      <div class="paneel app" id="import-paneel"><div class="app-kop"><b>Agenda inladen</b></div>
+        <p class="hulp">Kies een agendabestand (.ics). Het wordt in je browser gelezen: alleen de afspraken die je hieronder bevestigt gaan naar LIFE, zonder deelnemers.</p>
+        <details class="hulp-uitleg"><summary>Hoe krijg ik zo'n bestand?</summary>
+          <p class="hulp"><b>Google Agenda:</b> instellingen, Importeren en exporteren, Exporteren. Je krijgt een zipbestand; pak dat uit.<br><b>Apple Agenda:</b> Bestand, Exporteer, Exporteer. Of kies een agenda en Bestand, Exporteer.<br><b>Outlook:</b> Bestand, Agenda opslaan, kies .ics.</p></details>
+        <form class="form" id="import-form" novalidate>
+          <label for="import-bestand">Bestand<input id="import-bestand" type="file" accept=".ics,text/calendar"></label>
+          <div class="rij"><label for="import-van">Vanaf<input id="import-van" type="date"></label><label for="import-tot">Tot en met<input id="import-tot" type="date"></label></div>
+          <p class="melding-in" id="import-melding" role="status"></p>
+          <div id="import-resultaat" hidden>
+            <p class="hulp" id="import-samenvatting"></p>
+            <div class="import-lijst" id="import-lijst"></div>
+            <p class="hulp">De soort is een gok op de naam; pas hem aan waar hij niet klopt. Ingeladen afspraken staan vast, dus LIFE verschuift of schrapt ze nooit. Afspraken met deelnemers staan erbij als “met iemand”.</p>
+            <div class="knoppen"><button class="knopje knopje--vol" id="import-knop" type="submit">Voeg toe</button><button class="knopje" id="import-voorbeeld" type="button" hidden>Probeer met een voorbeeldbestand</button></div>
+          </div>
+        </form></div>
+      <div class="paneel app"><div class="app-kop"><b>Blok toevoegen</b></div>
+      <form class="form" id="blok-form" novalidate>
+        <label for="titel">Naam<input id="titel" type="text" maxlength="120" placeholder="Bijvoorbeeld: hardlopen" required></label>
+        <div class="rij"><label for="soort">Soort<select id="soort"></select></label><label for="datum">Dag<input id="datum" type="date" required></label><label for="start">Van<input id="start" type="time" value="09:00" required></label><label for="einde">Tot<input id="einde" type="time" value="10:00" required></label></div>
+        <div class="vinkjes"><label><input type="checkbox" id="vast"> Staat vast</label><label><input type="checkbox" id="persoon"> Afspraak met iemand</label><label><input type="checkbox" id="uitstelbaar"> Kan wachten</label><label><input type="checkbox" id="zwaar"> Zwaar</label></div>
+        <p class="hulp">LIFE verschuift of schrapt nooit iets dat vaststaat of met iemand is afgesproken.</p>
+        <details><summary>Meer opties</summary><div><label for="blok-plek">Plek<input id="blok-plek" type="text" maxlength="60" placeholder="Bijvoorbeeld: kantoor"></label>
+          <div id="lichter-velden" hidden><div class="rij"><label for="lichter-titel">Lichtere vorm<input id="lichter-titel" type="text" placeholder="Bijvoorbeeld: wandelen"></label><label for="lichter-duur">Hoe lang<input id="lichter-duur" type="text" inputmode="numeric" placeholder="0:30"></label></div></div></div></details>
+        <p class="melding-in" id="blok-melding" role="status"></p>
+        <div><button class="knopje knopje--vol" type="submit">Toevoegen</button></div>
+      </form></div>
+      <div class="paneel rechts app"><div class="app-kop"><b>Je agenda</b></div>
+        <div class="weeknav"><button class="klein" id="week-vorige" type="button">Vorige week</button><b id="week-titel"></b><button class="klein" id="week-volgende" type="button">Volgende week</button></div>
+        <div id="voorbeeld-rij" hidden><p class="hulp">Deze week is nog leeg. Wil je eerst zien hoe het werkt?</p><div class="knoppen" style="margin:8px 0 14px"><button class="knopje" id="voorbeeld-knop" type="button">Vul met een voorbeeldweek</button></div></div>
+        <ul class="agenda" id="agenda-lijst"></ul></div>
+    </div>
+  </section>
+  <section class="hoofdstuk" id="ochtend" data-scene="fjord" data-tijd="14:20" data-plek="Vanochtend" aria-labelledby="kop-ochtend">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop"><p class="tijdregel"><b>14:20</b> vandaag</p><h2 id="kop-ochtend">Hoe zit je erbij?</h2><p class="plekregel">Slaap en energie bepalen wat haalbaar is</p></header>
+      <div class="paneel app"><div class="app-kop"><b>Check-in voor vandaag</b></div>
+        <div id="checkin-zonder" hidden><p>Slaap en energie zijn gezondheidsgegevens. Daarvoor heb je eerst je toestemming nodig. Die geef je hieronder bij “Je gegevens”.</p></div>
+        <form class="form" id="checkin-form" novalidate hidden>
+          <label for="checkin-slaap">Hoe lang sliep je?<input id="checkin-slaap" type="text" inputmode="numeric" placeholder="6:40"></label>
+          <fieldset class="regelaars" style="border:0;padding:0;margin:0"><legend>Energie vanochtend</legend><div class="energie"><label><input type="radio" name="energie" value="1"><span>1</span></label><label><input type="radio" name="energie" value="2"><span>2</span></label><label><input type="radio" name="energie" value="3"><span>3</span></label><label><input type="radio" name="energie" value="4"><span>4</span></label><label><input type="radio" name="energie" value="5"><span>5</span></label></div></fieldset>
+          <p class="melding-in" id="checkin-melding" role="status"></p>
+          <div><button class="knopje knopje--vol" type="submit">Opslaan</button> <a class="knopje" href="/vandaag.html">Naar vandaag</a></div>
+        </form></div>
+    </div>
+  </section>
+  <section class="hoofdstuk" id="gegevens" data-scene="vestrahorn" data-tijd="22:00" data-plek="Je gegevens" aria-labelledby="kop-gegevens">
+    <figure class="podium"></figure>
+    <div class="verhaal">
+      <header class="kop"><p class="tijdregel"><b>22:00</b> jouw gegevens</p><h2 id="kop-gegevens">Van jou, en jij beslist.</h2><p class="plekregel">Toestemming, kopie en verwijderen</p></header>
+      <div class="paneel app"><div class="app-kop"><b>Toestemming</b></div><p id="toestemming-tekst"></p><div class="knoppen"><button class="knopje" id="toestemming-knop" type="button"></button></div>
+        <p class="melding-in" id="gegevens-melding" role="status"></p></div>
+      <div class="paneel rechts app"><div class="app-kop"><b>Je gegevens meenemen of verwijderen</b></div>
+        <p>Download alles wat LIFE van je heeft als bestand, of verwijder je account definitief. Verwijderen kan niet ongedaan worden gemaakt.</p>
+        <div class="knoppen"><a class="knopje" href="/api/account/export" download>Download mijn gegevens</a></div>
+        <form class="form" id="verwijder-form" style="margin-top:16px"><details><summary>Account verwijderen</summary><div>
+          <label for="verwijder-ww">Typ je wachtwoord om te bevestigen<input id="verwijder-ww" type="password" autocomplete="current-password" required></label>
+          <p class="melding-in" id="verwijder-melding" role="alert"></p>
+          <div><button class="knopje knopje--gevaar" type="submit">Verwijder alles definitief</button></div></div></details></form></div>
+    </div>
+  </section>
+</main>
+<script src="/landschap.js"></script>
+<script type="module" src="/invullen.js"></script>
+</body>
+</html>

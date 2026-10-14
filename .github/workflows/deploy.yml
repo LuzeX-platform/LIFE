@@ -1,0 +1,40 @@
+# Zet een deploy naar Render in gang zodra main verandert, en logt dat in het tabblad Actions.
+#
+# EENMALIG INSTELLEN
+#   1. Render -> de service luzex-life -> Settings -> Deploy Hook. Kopieer de URL
+#      (vorm: https://api.render.com/deploy/srv-XXXX?key=YYYY).
+#   2. GitHub -> deze repository -> Settings -> Secrets and variables -> Actions ->
+#      New repository secret, naam RENDER_DEPLOY_HOOK, plak de URL.
+# De URL bevat een sleutel en hoort daarom in een secret, niet in dit bestand.
+
+name: Deploy naar Render
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: render-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Controleer of de deploy hook is ingesteld
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::Secret RENDER_DEPLOY_HOOK ontbreekt. Zie de instructies boven in .github/workflows/deploy.yml."
+            exit 1
+          fi
+      - name: Vraag Render om een nieuwe deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          set -euo pipefail
+          antwoord=$(curl --silent --show-error --fail-with-body --retry 3 --retry-delay 5 --retry-all-errors --max-time 30 -X POST "$HOOK")
+          echo "Render antwoordde: $antwoord"
+          echo "Deploy aangevraagd voor commit ${GITHUB_SHA}." >> "$GITHUB_STEP_SUMMARY"
