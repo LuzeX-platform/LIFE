@@ -20,7 +20,7 @@ rekent, en alles om op Render te draaien. Nog niet live; zie "Uitrollen".
   je bevestigt gaan naar de server, nooit de deelnemers. Ingeladen afspraken staan vast. Opnieuw
   inladen geeft geen dubbele afspraken. Terugkerende afspraken, tijdzones en zomertijd worden
   ondersteund; zie de opmerking bovenaan het bestand voor wat niet kan.
-- **Dashboard:** Vandaag en Week, in de landschapstocht, berekend met de planlogica.
+- **Eén pagina** (`vandaag.html`), in de landschapstocht en berekend met de planlogica: bovenaan de opening, daaronder de dagindeling van vandaag, dan de weekindeling, dan een dashboard met alle inzichten. Invullen blijft een aparte pagina (`invullen.html`).
 - **Je gegevens:** toestemming intrekken (wist de check-ins), alles downloaden, account verwijderen.
 
 ## Lokaal draaien
