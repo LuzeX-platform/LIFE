@@ -41,7 +41,7 @@ hóe iets moet, kijk hoe ACCRD het doet. Wijk je af, schrijf op die plek waaróm
   mensen.
 - **Het ontwerp is de landschapstocht, ook voor het dashboard.** Parallax-landschappen in lagen,
   een klok die meeloopt van ochtend tot nacht, en elk dagdeel als hoofdstuk met een werkend
-  paneel erin (`frontend/landschap.css` en `landschap.js`, Vandaag en Week). Eerder stond hier
+  paneel erin (`frontend/landschap.css` en `landschap.js`; één pagina met dag, week en dashboard, Invullen apart). Eerder stond hier
   "rustig en bruikbaar eerst", en dat leidde tot een vlakke app-look die niemand wilde. Bouw
   nieuwe schermen dus in dezelfde tocht en maak geen apart, vlak dashboard. Overweeg je toch
   een afwijking, vraag het eerst. Beslist en afgevallen: Liquid Glass voor de lagen (te zwaar

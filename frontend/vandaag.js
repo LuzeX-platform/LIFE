@@ -1,4 +1,4 @@
-import { haalbaarheid, lieverNiet, pasToe, botsingen, klok, duur, weekdag } from '/planner/index.js';
+import { haalbaarheid, lieverNiet, botsingen, weekBalans, klok, duur, weekdag } from '/planner/index.js';
 import { api, esc, foutTekst, hoofdletter, koppelUitloggen, maandagVan, status, vandaag, weekVan } from '/api.js';
 
 koppelUitloggen();
@@ -8,14 +8,14 @@ const VANDAAG = vandaag();
 const dagenIso = weekVan(VANDAAG);
 const label = { haalbaar: 'Haalbaar', krap: 'Krap', 'te vol': 'Te vol' };
 const datumTekst = d => new Intl.DateTimeFormat('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`));
-const kort = d => new Intl.DateTimeFormat('nl-NL', { weekday: 'short', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`));
 
 // Toestand. Alles wat de gebruiker invult staat op de server; hier staat alleen de weergave
 // ervan, plus wat nog niet bewaard kan worden (slaap en energie zonder toestemming).
 let profiel, blokken = [], checkins = {}, toestemming = false;
 const lokaal = {}, genegeerd = new Set();
-let gekozen = new URLSearchParams(location.search).get('dag');
-if (!dagenIso.includes(gekozen)) gekozen = VANDAAG;
+// Eén pagina voor dag, week en dashboard: "de dag" is altijd vandaag. Een dag kiezen kan niet
+// meer; de weekindeling hieronder laat de andere dagen zien.
+const gekozen = VANDAAG;
 
 const blokkenVan = d => blokken.filter(b => b.datum === d);
 const dagen = () => dagenIso.map(d => ({ datum: d, blokken: blokkenVan(d) }));
@@ -51,11 +51,6 @@ function teken() {
   el('intro-tekst').textContent = blokken.length
     ? `Je dag is ${label[h.oordeel].toLowerCase()}: ${h.score} van 100. ${l.suggesties.length ? `LIFE ziet ${l.suggesties.length === 1 ? 'één ding' : `${l.suggesties.length} dingen`} die je beter kunt laten.` : 'Er is niets dat je beter kunt laten.'}`
     : 'Je agenda is nog leeg. Vul hem in, en LIFE maakt er een haalbaar dagplan van.';
-
-  el('dagtabs').innerHTML = dagenIso.map(d => {
-    const s = haalbaarheid(blokkenVan(d), profielVoor(d));
-    return `<button class="dagtab" type="button" data-datum="${d}" aria-pressed="${d === gekozen}"><small>${kort(d)}</small><b class="${status(s.oordeel)}">${blokkenVan(d).length ? s.score : '–'}</b></button>`;
-  }).join('');
 
   el('score').innerHTML = `
     <div class="scorekop"><div class="scoregetal ${status(h.oordeel)}">${h.score}<small> / 100</small></div>
@@ -103,14 +98,83 @@ function teken() {
       : '<p class="alt">Beide staan vast. Kies zelf wat voorgaat.</p>'}</div>`).join('')
     : '<p class="app-noot">Geen botsingen op deze dag.</p>';
 
-  const telbaar = bl.filter(b => b.soort !== 'reis'), klaarAantal = telbaar.filter(b => b.status === 'gedaan').length;
-  const morgen = dagenIso[dagenIso.indexOf(gekozen) + 1];
-  const kop = `<dl class="feiten"><div><dt>Vandaag gedaan</dt><dd>${klaarAantal} van ${telbaar.length}</dd></div></dl>`;
-  if (morgen) {
-    const m = haalbaarheid(blokkenVan(morgen), profielVoor(morgen));
-    el('afsluiting').innerHTML = `${kop}<dl class="feiten"><div><dt>Morgen</dt><dd>${weekdag(morgen)}</dd></div><div><dt>Haalbaarheid</dt><dd class="${status(m.oordeel)}">${blokkenVan(morgen).length ? `${m.score} van 100` : '–'}</dd></div></dl>
-      <p class="app-noot">${!blokkenVan(morgen).length ? 'Morgen staat nog niets in je agenda.' : m.oordeel === 'haalbaar' ? 'Morgen past. Slaap lekker.' : 'Morgen is een drukke dag. Met een uur extra slaap houd je hem haalbaar.'}</p>`;
-  } else el('afsluiting').innerHTML = `${kop}<p class="app-noot">Dit was de laatste dag van de week.</p>`;
+  tekenWeek();
+  tekenDashboard();
+}
+
+// Per dag van de week alles wat de panelen nodig hebben, in één keer uitgerekend.
+function weekRekenen() {
+  return dagenIso.map(d => {
+    const bl = blokkenVan(d), pr = profielVoor(d);
+    const l = lieverNiet(bl, pr, { dagen: dagen(), datum: d });
+    const suggesties = d === gekozen ? l.suggesties.filter(x => !genegeerd.has(x.blokId)) : l.suggesties;
+    return { datum: d, bl, pr, h: haalbaarheid(bl, pr), suggesties, bots: botsingen(bl, pr) };
+  });
+}
+const telbaar = bl => bl.filter(b => b.soort !== 'reis');
+const gemiddelde = lijst => lijst.length ? Math.round(lijst.reduce((a, b) => a + b, 0) / lijst.length) : null;
+
+function tekenWeek() {
+  const w = weekRekenen();
+  const mooi = d => new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`));
+  el('week-info').textContent = `${mooi(dagenIso[0])} tot en met ${mooi(dagenIso[6])}`;
+  el('weekraster').innerHTML = w.map(d => {
+    const lijst = d.bl.slice().sort((a, b) => a.start - b.start);
+    return `<section class="weekdag" ${d.datum === gekozen ? 'aria-current="date"' : ''} aria-label="${esc(hoofdletter(datumTekst(d.datum)))}">
+      <header><b>${esc(weekdag(d.datum).slice(0, 2))} ${Number(d.datum.slice(8))}</b><span class="${status(d.h.oordeel)}">${lijst.length ? d.h.score : '–'}</span></header>
+      ${lijst.length ? `<ol>${lijst.map(b => `<li class="${b.soort === 'reis' ? 'reis' : ''} ${b.status === 'gedaan' ? 'klaar' : ''}"><time>${klok(b.start)}</time><span>${esc(b.titel)}</span></li>`).join('')}</ol>` : '<p class="app-noot">Niets gepland.</p>'}
+    </section>`;
+  }).join('');
+}
+
+function tekenDashboard() {
+  const w = weekRekenen(), vandaagDag = w.find(d => d.datum === gekozen);
+  const metBlokken = w.filter(d => d.bl.length);
+  const gemScore = gemiddelde(metBlokken.map(d => d.h.score));
+  const totaal = w.flatMap(d => telbaar(d.bl)), klaar = totaal.filter(b => b.status === 'gedaan').length;
+  const slaapDagen = w.filter(d => heeftCheckin(d.datum)).map(d => d.pr.slaapGisteren);
+  const gemSlaap = gemiddelde(slaapDagen);
+  const bots = w.reduce((n, d) => n + d.bots.length, 0), liever = w.reduce((n, d) => n + d.suggesties.length, 0);
+  const tegel = (naam, waarde, klasse = '', toelichting = '') =>
+    `<div><dt>${naam}</dt><dd class="${klasse}">${waarde}</dd>${toelichting ? `<small>${toelichting}</small>` : ''}</div>`;
+  el('kpis').innerHTML = `<dl>
+    ${tegel('Vandaag', blokken.length && vandaagDag.bl.length ? vandaagDag.h.score : '–', vandaagDag.bl.length ? status(vandaagDag.h.oordeel) : '', vandaagDag.bl.length ? label[vandaagDag.h.oordeel] : 'Nog niets gepland')}
+    ${tegel('Gemiddelde week', gemScore ?? '–', gemScore === null ? '' : status(gemScore >= 80 ? 'haalbaar' : gemScore >= 60 ? 'krap' : 'te vol'), metBlokken.length ? `${metBlokken.length} dagen met een plan` : 'Nog geen plan')}
+    ${tegel('Afgevinkt', `${klaar} van ${totaal.length}`, '', 'blokken deze week')}
+    ${tegel('Gemiddelde slaap', gemSlaap === null ? '–' : duur(gemSlaap), '', gemSlaap === null ? 'Nog geen check-ins' : `doel ${duur(profiel.slaapDoel)}`)}
+    ${tegel('Liever niet', liever, '', liever === 1 ? 'suggestie deze week' : 'suggesties deze week')}
+    ${tegel('Botsingen', bots, bots ? 'bots' : '', bots === 1 ? 'afspraak botst' : 'afspraken botsen')}
+  </dl>`;
+
+  const doelen = profiel.weekDoelen || {};
+  const rijen = Object.keys(doelen).length ? weekBalans(w.map(d => ({ datum: d.datum, blokken: d.bl })), doelen) : [];
+  const MAX = Math.max(1, ...rijen.flatMap(r => [r.gepland, r.doel]));
+  el('balans-lijst').innerHTML = rijen.map(r => `<li class="week"><span class="naam">${esc(r.soort.replace('-', ' '))}</span>
+    <div class="staaf" role="img" aria-label="${esc(r.soort)}: ${duur(r.gepland)} van ${duur(r.doel)}"><b style="width:${Math.round(100 * r.gepland / MAX)}%"></b><i style="left:${Math.round(100 * r.doel / MAX)}%"></i></div>
+    <span class="getal ${r.status === 'achter' ? 'achter' : ''}">${duur(r.gepland)} / ${duur(r.doel)}</span></li>`).join('');
+  const achter = rijen.filter(r => r.status === 'achter').map(r => r.soort.replace('-', ' '));
+  el('balans-noot').innerHTML = !rijen.length ? 'Je hebt nog geen weekdoelen. <a href="/invullen.html#jij">Stel ze in</a>, dan zie je hier waar je achterloopt.'
+    : achter.length ? `Achter op je doel: ${achter.join(', ')}. Het streepje op de balk is het doel.` : 'Alles ligt op koers.';
+
+  // Slaap tegenover het doel; de energie van die ochtend staat achter het getal.
+  const SLAAPMAX = Math.max(1, profiel.slaapDoel, ...w.map(d => d.pr.slaapGisteren));
+  el('slaap-lijst').innerHTML = w.map(d => {
+    const bekend = heeftCheckin(d.datum), m = d.pr.slaapGisteren;
+    return `<li class="week"><span class="naam">${esc(weekdag(d.datum).slice(0, 2))} ${Number(d.datum.slice(8))}</span>
+      <div class="staaf" role="img" aria-label="${bekend ? `Slaap ${duur(m)}, doel ${duur(profiel.slaapDoel)}` : 'Geen check-in'}"><b style="width:${bekend ? Math.round(100 * m / SLAAPMAX) : 0}%"></b><i style="left:${Math.round(100 * profiel.slaapDoel / SLAAPMAX)}%"></i></div>
+      <span class="getal ${bekend && m < profiel.slaapDoel - 60 ? 'achter' : ''}">${bekend ? `${duur(m)} · ${d.pr.energie}/5` : '–'}</span></li>`;
+  }).join('');
+  el('slaap-noot').innerHTML = slaapDagen.length
+    ? 'Het streepje is je slaapdoel, het cijfer erachter de energie van die ochtend.'
+    : toestemming ? 'Vul bij “Hoe haalbaar is vandaag?” je slaap en energie in, dan bouwt dit overzicht zich op.'
+      : 'Slaap en energie worden alleen bewaard met je toestemming. <a href="/invullen.html#gegevens">Geef toestemming</a>.';
+
+  el('weekdagen').innerHTML = w.map(d => `<li class="weekdag-rij"><span class="dagnaam">${esc(weekdag(d.datum).slice(0, 2))} ${Number(d.datum.slice(8))}</span>
+      <span class="maat ${status(d.h.oordeel)}" style="margin:0"><b style="width:${d.bl.length ? d.h.score : 0}%"></b></span><span class="getal ${status(d.h.oordeel)}">${d.bl.length ? d.h.score : '–'}</span></li>`).join('');
+  const tel = [...metBlokken].sort((a, b) => a.h.score - b.h.score);
+  el('dagen-noot').textContent = tel.length > 1 && tel[0].h.score < 80
+    ? `${hoofdletter(weekdag(tel[0].datum))} is je zwaarste dag (${tel[0].h.score}). ${hoofdletter(weekdag(tel.at(-1).datum))} heeft de meeste lucht (${tel.at(-1).h.score}).`
+    : tel.length ? 'Geen dag die wringt.' : 'Zodra er iets in je agenda staat, zie je hier welke dag wringt.';
 }
 
 const meld = tekst => { el('melding').textContent = tekst; el('melding').hidden = !tekst; if (tekst) setTimeout(() => { el('melding').hidden = true; }, 4200); };
@@ -122,7 +186,6 @@ async function wijzig(id, data) {
 document.addEventListener('click', async e => {
   const knop = e.target.closest('button');
   if (!knop) return;
-  if (knop.dataset.datum) { gekozen = knop.dataset.datum; return teken(); }
   if (knop.id === 'laad-voorbeeld') {
     try { await api('POST', '/api/voorbeeld', { maandag: maandagVan(VANDAAG) }); await laad(); teken(); } catch (f) { meld(foutTekst(f)); }
     return;
